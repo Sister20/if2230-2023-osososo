@@ -4,10 +4,23 @@
 #include "lib-header/gdt.h"
 #include "lib-header/framebuffer.h"
 #include "lib-header/kernel_loader.h"
+#include "framebuffer.c"
+
 
 void kernel_setup(void) {
-    uint32_t a;
-    uint32_t volatile b = 0x0000BABE;
-    __asm__("mov $0xCAFE0000, %0" : "=r"(a));
-    while (TRUE) b += 1;
+    framebuffer_clear();
+    framebuffer_write(3, 8,  'H', 0, 200);
+    framebuffer_write(3, 9,  'a', 0, 200);
+    framebuffer_write(3, 10, 'i', 0, 200);
+    framebuffer_write(3, 11, '!', 0, 200);
+    framebuffer_write(3, 12, ' ', 0, 0);
+    framebuffer_write(3, 13, 'S', 0, 100);
+    framebuffer_write(3, 14, 'y', 0, 100);
+    framebuffer_write(3, 15, 'a', 0, 100);
+    framebuffer_write(3, 16, '\'', 0, 100);
+    framebuffer_write(3, 17, 'b', 0, 100);
+    framebuffer_write(3, 18, 'a', 0, 100);
+    framebuffer_write(3, 19, 'n', 0, 100);
+    framebuffer_set_cursor(3, 10);
+    while (TRUE);
 }
