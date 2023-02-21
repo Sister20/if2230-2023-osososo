@@ -1,4 +1,11 @@
 {
     "debug.onTaskErrors": "debugAnyway",
+<<<<<<< HEAD
     "C_Cpp.errorSquiggles": "disabled",
+=======
+    "files.associations": {
+        "stdmem.h": "c",
+        "stdtype.h": "c"
+    },
+>>>>>>> b8be2604b083961f59ecc46495de0a7500650eea
 }

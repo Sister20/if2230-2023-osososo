@@ -5,19 +5,22 @@
 #include "lib-header/framebuffer.h"
 #include "lib-header/kernel_loader.h"
 
-// void kernel_setup(void) {
-//     uint32_t a;
-//     uint32_t volatile b = 0x0000BABE;
-//     __asm__("mov $0xCAFE0000, %0" : "=r"(a));
-//     while (TRUE) b += 1;
-// }
 
 void kernel_setup(void) {
+    enter_protected_mode(&_gdt_gdtr);
     framebuffer_clear();
-    framebuffer_write(3, 8,  'H', 0xF, 0);
-    framebuffer_write(3, 9,  'a', 0xF, 0);
-    framebuffer_write(3, 10, 'i', 0xF, 0);
-    framebuffer_write(3, 11, '!', 0xF, 0);
-    framebuffer_set_cursor(3, 10);
+    framebuffer_write(3, 8,  'H', 0xf, 0);
+    framebuffer_write(3, 9,  'a', 0xf, 0);
+    framebuffer_write(3, 10, 'i', 0xf, 0);
+    framebuffer_write(3, 11, '!', 0xf, 0);
+    framebuffer_write(3, 12, ' ', 0xf, 0);
+    framebuffer_write(3, 13, 'S', 0xf, 0);
+    framebuffer_write(3, 14, 'y', 0xf, 0);
+    framebuffer_write(3, 15, 'a', 0xf, 0);
+    framebuffer_write(3, 16, '\'', 0, 0);
+    framebuffer_write(3, 17, 'b', 100, 0);
+    framebuffer_write(3, 18, 'a', 100, 0);
+    framebuffer_write(3, 19, 'n', 100, 0);
+    framebuffer_set_cursor(3, 12);
     while (TRUE);
 }
