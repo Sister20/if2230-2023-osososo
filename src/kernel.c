@@ -7,7 +7,7 @@
 
 
 void kernel_setup(void) {
-    // enter_protected_mode(&_gdt_gdtr);
+    enter_protected_mode(&_gdt_gdtr);
     framebuffer_clear();
     framebuffer_write(3, 8,  'H', 0xf, 0);
     framebuffer_write(3, 9,  'a', 0xf, 0);

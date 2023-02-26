@@ -31,6 +31,7 @@ kernel:
 	@$(CC) $(CFLAGS) $(SOURCE_FOLDER)/stdmem.c -o $(OUTPUT_FOLDER)/stdmem.o
 	@$(CC) $(CFLAGS) $(SOURCE_FOLDER)/portio.c -o $(OUTPUT_FOLDER)/portio.o
 	@$(CC) $(CFLAGS) $(SOURCE_FOLDER)/framebuffer.c -o $(OUTPUT_FOLDER)/framebuffer.o
+	@$(CC) $(CFLAGS) $(SOURCE_FOLDER)/gdt.c -o $(OUTPUT_FOLDER)/gdt.o
 	@$(CC) $(CFLAGS) $(SOURCE_FOLDER)/kernel.c -o $(OUTPUT_FOLDER)/kernel.o
 	@$(LIN) $(LFLAGS) bin/*.o -o $(OUTPUT_FOLDER)/kernel
 
@@ -51,4 +52,5 @@ iso: kernel
 		-quiet              \
 		-boot-info-table    \
 		-o bin/$(ISO_NAME).iso   \
-	-r $(OUTPUT_FOLDER)/iso
+		$(OUTPUT_FOLDER)/iso
+	@rm -r $(OUTPUT_FOLDER)/iso
