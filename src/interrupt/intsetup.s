@@ -42,7 +42,6 @@ call_generic_handler:
     iret
 
 
-
 ; Macro for creating interrupt handler that only push interrupt number
 %macro no_error_code_interrupt_handler 1
 interrupt_handler_%1:
@@ -116,8 +115,6 @@ no_error_code_interrupt_handler i
 %assign i i+1 
 %endrep
 
-
-
 ; ISR stub table, useful for reducing code repetition
 isr_stub_table:
     %assign i 0 
@@ -125,3 +122,4 @@ isr_stub_table:
     dd interrupt_handler_%+i
     %assign i i+1 
     %endrep
+
