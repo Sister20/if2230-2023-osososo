@@ -1,4 +1,5 @@
 #include "../lib-header/idt.h"
+#include "../lib-header/stdmem.h"
 
 extern void *isr_stub_table[ISR_STUB_TABLE_LIMIT];
 
@@ -19,7 +20,7 @@ void set_interrupt_gate(uint8_t int_vector, void *handler_address, uint16_t gdt_
     gate->present = 1;
 }
 
-void initialize_idt(void) {
+void initialize_idt() {
     _idt_idtr.limit = sizeof(idt) - 1;
     _idt_idtr.base = &idt;
 
