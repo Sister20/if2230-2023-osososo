@@ -63,54 +63,49 @@ bool is_keyboard_blocking(void){
  * after calling `keyboard_state_activate();`
  */
 void keyboard_isr(void){
-  // Read the scan code from the keyboard data port
-  uint8_t scan_code = inb(KEYBOARD_DATA_PORT);
+  if (!keyboard_state.keyboard_input_on)
+        keyboard_state.buffer_index = 0;
+    else {
+        uint8_t scancode = in(KEYBOARD_DATA_PORT);
 
-  // Check if this is an extended scan code
-  if (scan_code == EXTENDED_SCANCODE_BYTE) {
-      // Set the read extended mode flag to TRUE
-      keyboard_state.read_extended_mode = TRUE;
-  } else {
-      // Determine the ASCII character corresponding to the scan code
-      char ascii_char = 0;
-      if (keyboard_state.read_extended_mode) {
-          // Handle extended scan codes for arrow keys
-          switch (scan_code) {
-              case EXT_SCANCODE_UP:
-                  ascii_char = '^';
-                  break;
-              case EXT_SCANCODE_DOWN:
-                  ascii_char = 'v';
-                  break;
-              case EXT_SCANCODE_LEFT:
-                  ascii_char = '<';
-                  break;
-              case EXT_SCANCODE_RIGHT:
-                  ascii_char = '>';
-                  break;
-          }
-          // Reset the read extended mode flag
-          keyboard_state.read_extended_mode = FALSE;
-      } else {
-            // Convert scan code to ASCII character
-          ascii_char = keyboard_scancode_1_to_ascii_map[scan_code];
-      }
+        if (scancode == EXTENDED_SCANCODE_BYTE) {
+            keyboard_state.read_extended_mode = true;
+        } else {
+            char mapped_char = keyboard_scancode_1_to_ascii_map[scancode];
 
-      // Check if the character is printable
-      if (ascii_char >= 32 && ascii_char <= 126) {
-          // Add the character to the keyboard buffer
-          keyboard_state.keyboard_buffer[keyboard_state.buffer_index] = ascii_char;
-          keyboard_state.buffer_index++;
-          // Print the character to the console or framebuffer
-          // TODO: Implement console or framebuffer output
-      }
+            if (keyboard_state.read_extended_mode) {
+                keyboard_state.read_extended_mode = false;
+                switch (scancode) {
+                    case EXT_SCANCODE_UP:
+                        mapped_char = 'A';
+                        break;
+                    case EXT_SCANCODE_DOWN:
+                        mapped_char = 'B';
+                        break;
+                    case EXT_SCANCODE_LEFT:
+                        mapped_char = 'D';
+                        break;
+                    case EXT_SCANCODE_RIGHT:
+                        mapped_char = 'C';
+                        break;
+                    default:
+                        // Ignore any other extended scancode
+                        return;
+                }
+            }
 
-      // Check if the enter key was pressed to signal end of input
-      if (ascii_char == '\n') {
-          // Deactivate the keyboard ISR and signal end of input
-          keyboard_state.keyboard_input_on = FALSE;
-          keyboard_state.buffer_index = 0;
-          // TODO: Implement end of input signal
-      }
-  }
+            if (mapped_char != 0) {
+                if (mapped_char == '\n') {
+                    // Line feed is pressed, stop processing
+                    keyboard_state.keyboard_input_on = false;
+                } else if (keyboard_state.buffer_index < KEYBOARD_BUFFER_SIZE) {
+                    // Save to buffer
+                    keyboard_state.keyboard_buffer[keyboard_state.buffer_index++] = mapped_char;
+                }
+            }
+        }
+    }
+
+    pic_ack(IRQ_KEYBOARD);
+
 }
