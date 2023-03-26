@@ -45,8 +45,8 @@ struct IDTGate {
     uint8_t _r_bit_2 : 3;
     uint8_t gate_32 : 1;
     uint8_t _r_bit_3 : 1;
-    uint8_t privilege : 2;
-    uint8_t present : 1;
+    uint8_t dpl : 2;
+    uint8_t valid_bit : 1;
 
     // Third 32-bit (Bit 64 to 95)
     uint16_t offset_high;
@@ -60,7 +60,7 @@ struct IDTGate {
  * ...
  */
 struct IDT {
-    struct IDTGate entries[IDT_MAX_ENTRY_COUNT];
+    struct IDTGate table[IDT_MAX_ENTRY_COUNT];
 } __attribute__((packed));
 
 /**
