@@ -1,6 +1,6 @@
 #include "../lib-header/interrupt.h"
 #include "../lib-header/portio.h"
-#include "../lib-header/keyboard.h"
+// #include "../lib-header/keyboard.h"
 
 void io_wait(void) {
     out(0x80, 0);
@@ -57,7 +57,7 @@ void main_interrupt_handler(
         case IRQ_KEYBOARD:
             // Call ISR for Keyboard interrupt
             // Example: keyboard_interrupt_handler();
-            keyboard_isr();
+            // keyboard_isr();
             break;
         case IRQ_CASCADE:
             // Call ISR for Mouse interrupt
