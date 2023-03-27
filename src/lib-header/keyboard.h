@@ -22,6 +22,8 @@
  */
 extern const char keyboard_scancode_1_to_ascii_map[256];
 
+extern int16_t tracker;
+
 /**
  * KeyboardDriverState - Contain all driver states
  * 
@@ -69,6 +71,13 @@ bool is_keyboard_blocking(void);
  * This can be made into blocking input with `while (is_keyboard_blocking());` 
  * after calling `keyboard_state_activate();`
  */
+
+// get the resolution column for keyboard
+uint16_t get_resolution_row();
+
+// get the resolution column for keyboard
+uint16_t get_resolution_col();
+
 void keyboard_isr(void);
 
 #endif

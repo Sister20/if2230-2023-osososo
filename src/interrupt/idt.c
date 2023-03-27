@@ -1,12 +1,25 @@
 #include "../lib-header/idt.h"
 #include "../lib-header/stdmem.h"
 
-extern void *isr_stub_table[ISR_STUB_TABLE_LIMIT];
-
-static struct IDT idt;
+struct IDT idt = {
+    .table = {
+        [0 ... (IDT_MAX_ENTRY_COUNT - 1)] = {
+            .offset_low = 0,
+            .segment = 0,
+            ._reserved = 0,
+            ._r_bit_1 = 0,
+            ._r_bit_2 = 0,
+            .gate_32 = 0,
+            ._r_bit_3 = 0,
+            .dpl = 0,
+            .valid_bit = 0,
+            .offset_high = 0
+        }
+    }
+};
 
 void set_interrupt_gate(uint8_t int_vector, void *handler_address, uint16_t gdt_seg_selector, uint8_t privilege) {
-    struct IDTGate *gate = &idt.entries[int_vector];
+    struct IDTGate *gate = &idt.table[int_vector];
     uint32_t offset = (uint32_t) handler_address;
     gate->offset_low = offset & 0xFFFF;
     gate->offset_high = (offset >> 16) & 0xFFFF;
@@ -16,9 +29,14 @@ void set_interrupt_gate(uint8_t int_vector, void *handler_address, uint16_t gdt_
     gate->_r_bit_2 = INTERRUPT_GATE_R_BIT_2;
     gate->gate_32 = 1; // Always set to 32 bit
     gate->_r_bit_3 = INTERRUPT_GATE_R_BIT_3;
-    gate->privilege = privilege;
-    gate->present = 1;
+    gate->dpl = privilege;
+    gate->valid_bit = 1;
 }
+
+struct IDTR _idt_idtr = {
+    .limit    = sizeof(struct IDT) - 1,
+    .base = &idt,
+};
 
 void initialize_idt() {
     _idt_idtr.limit = sizeof(idt) - 1;
@@ -32,4 +50,5 @@ void initialize_idt() {
     }
     // Load interrupt descriptor table
     __asm__ volatile ("lidt %0" : : "m" (_idt_idtr));
+    __asm__ volatile("sti");    
 }
