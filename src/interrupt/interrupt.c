@@ -42,7 +42,6 @@ void pic_remap(void) {
     out(PIC1_DATA, a1);
     out(PIC2_DATA, a2);
 }
-#include "interrupt.h"
 
 void main_interrupt_handler(
     __attribute__((unused)) struct CPURegister cpu,
