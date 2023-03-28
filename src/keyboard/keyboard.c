@@ -123,11 +123,15 @@ void keyboard_isr(void){
                 keyboard_state.keyboard_buffer[keyboard_state.buffer_index++] = mapped_char;
                 if (mapped_char == '\n') {
                     // Stop processing
+                    mapped_char = ' ';
                     keyboard_state.keyboard_input_on = FALSE;
+                    tracker = ((tracker / 80) + 1) * 80;
+                    framebuffer_set_cursor(get_resolution_row(), get_resolution_col());
+                    framebuffer_write(get_resolution_row(), get_resolution_col(), mapped_char, 0xF, 0);
+
                 } else if (mapped_char == '\b') {
                     // tulis mapped_char ke layar
                     mapped_char = ' ';
-                    // mapped_char = (char)*(MEMORY_FRAMEBUFFER + tracker);
                     framebuffer_write(get_resolution_row(), get_resolution_col(), mapped_char, 0xF, 0);
                     // geser kursor ke kiri;
                     tracker--;         
