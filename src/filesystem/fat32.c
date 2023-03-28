@@ -29,6 +29,8 @@ void create_fat32(void) {
     struct FAT32FileAllocationTable fat_table = {0};
     fat_table.cluster_map[0] = CLUSTER_0_VALUE;
     fat_table.cluster_map[1] = CLUSTER_1_VALUE;
+    fat_table.cluster_map[2] = FAT32_FAT_END_OF_FILE;
+    
     write_blocks(&fat_table, FAT_CLUSTER_NUMBER, 1);
 }
 
