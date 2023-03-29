@@ -112,14 +112,6 @@ int8_t read_directory(struct FAT32DriverRequest request){
     return found;
 }
 
-void write_clusters(const void *ptr, uint32_t cluster_number, uint8_t cluster_count) {
-
-}
-
-void read_clusters(void *ptr, uint32_t cluster_number, uint8_t cluster_count) {
-
-}
-
 /* -- CRUD Operation -- */
 
 
