@@ -56,7 +56,6 @@ bool is_empty_storage() {
 void create_fat32(void) {
     write_blocks(fs_signature, BOOT_SECTOR, 1);
 
-    // Belum selesai, gatau bener apa engga
     struct FAT32FileAllocationTable fat_table = {0};
     fat_table.cluster_map[0] = CLUSTER_0_VALUE;
     fat_table.cluster_map[1] = CLUSTER_1_VALUE;

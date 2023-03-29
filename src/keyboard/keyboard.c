@@ -69,14 +69,17 @@ uint16_t get_resolution_row() {
         tracker = 80*25 + tracker;
     }
     if (tracker / 80 >= 25) {
+        framebuffer_clear();
         tracker = tracker - 80*25;
     }
     return (tracker / 80);
+    // return keyboard_state.buffer_index / 80;
 }
 
 // get the resolution column for keyboard
 uint16_t get_resolution_col() {
     return tracker % 80;
+    // return keyboard_state.buffer_index % 80;
 }
 
 void keyboard_isr(void){
@@ -94,62 +97,78 @@ void keyboard_isr(void){
                 keyboard_state.read_extended_mode = FALSE;
                 
                 switch (scancode) {
-                    case EXT_SCANCODE_UP:
-                        tracker -= 80;
-                        break;
-                    case EXT_SCANCODE_DOWN:
-                        tracker += 80;
-                        break;
+                    // case EXT_SCANCODE_UP:
+                    //     break;
+                    // case EXT_SCANCODE_DOWN:
+                    //     break;
                     case EXT_SCANCODE_LEFT:
-                        tracker -= 1;
+                        if (keyboard_state.buffer_index > 0) {
+                            tracker--;
+                            keyboard_state.buffer_index--;
+                        }
                         break;
                     case EXT_SCANCODE_RIGHT:
-                        tracker += 1;
+                        if (keyboard_state.buffer_index < KEYBOARD_BUFFER_SIZE) {
+                            tracker++;
+                            keyboard_state.buffer_index++;
+                        }
                         break;
                     default:
                         // Ignore any other extended scancode
                         return;
                 }
                 mapped_char = (char)*(MEMORY_FRAMEBUFFER + tracker*2);
+                keyboard_state.keyboard_buffer[keyboard_state.buffer_index] = mapped_char;
                 framebuffer_write(get_resolution_row(), get_resolution_col(), mapped_char, 0xF, 0);
                 framebuffer_set_cursor(get_resolution_row(), get_resolution_col());
+            } else {
+                if (mapped_char != 0) {
+                    if (mapped_char == '\n') {
+                        // Stop processing
+                        for (int i = 0; i < keyboard_state.buffer_index; i++) {
+                            framebuffer_write(i/80, i%80, keyboard_state.keyboard_buffer[i], 0xF, 0);
+                        }
+                        keyboard_state.buffer_index = 0;
+                        mapped_char = ' ';
+                        keyboard_state.keyboard_input_on = FALSE;
+                        tracker = ((tracker / 80) + 1) * 80;
+                        framebuffer_set_cursor(get_resolution_row(), get_resolution_col());
+                        framebuffer_write(get_resolution_row(), get_resolution_col(), mapped_char, 0xF, 0);
 
-                mapped_char = 0;
 
-            }
-
-            if (mapped_char != 0) {
-                // Save to buffer
-                keyboard_state.keyboard_buffer[keyboard_state.buffer_index++] = mapped_char;
-                if (mapped_char == '\n') {
-                    // Stop processing
-                    mapped_char = ' ';
-                    keyboard_state.keyboard_input_on = FALSE;
-                    tracker = ((tracker / 80) + 1) * 80;
-                    framebuffer_set_cursor(get_resolution_row(), get_resolution_col());
-                    framebuffer_write(get_resolution_row(), get_resolution_col(), mapped_char, 0xF, 0);
-
-                } else if (mapped_char == '\b') {
-                    // tulis mapped_char ke layar
-                    mapped_char = ' ';
-                    framebuffer_write(get_resolution_row(), get_resolution_col(), mapped_char, 0xF, 0);
-                    // geser kursor ke kiri;
-                    tracker--;         
-                    framebuffer_set_cursor(get_resolution_row(), get_resolution_col());
-                    mapped_char = (char)*(MEMORY_FRAMEBUFFER + tracker*2);
-                    framebuffer_write(get_resolution_row(), get_resolution_col(), mapped_char, 0xF, 0);                         
-                } else {
-                    // tulis mapped_char ke layar
-                    framebuffer_write(get_resolution_row(), get_resolution_col(), mapped_char, 0xF, 0);
-                    // geser kursor ke kanan;
-                    tracker++;         
-                    framebuffer_set_cursor(get_resolution_row(), get_resolution_col());
-                    mapped_char = (char)*(MEMORY_FRAMEBUFFER + tracker*2);
-                    framebuffer_write(get_resolution_row(), get_resolution_col(), mapped_char, 0xF, 0);                    
+                    } else if (mapped_char == '\b') {
+                        if (keyboard_state.buffer_index >= 0) {
+                            // tulis mapped_char ke layar
+                            mapped_char = ' ';
+                            framebuffer_write(get_resolution_row(), get_resolution_col(), mapped_char, 0xF, 0);
+                            
+                            // geser kursor ke kiri;
+                            if (keyboard_state.buffer_index > 0) {
+                                tracker--;
+                                keyboard_state.buffer_index--;
+                            }
+                                     
+                            
+                            framebuffer_set_cursor(get_resolution_row(), get_resolution_col());
+                            mapped_char = (char)*(MEMORY_FRAMEBUFFER + tracker*2);
+                            framebuffer_write(get_resolution_row(), get_resolution_col(), mapped_char, 0xF, 0); 
+                        }
+                    } else {
+                        // tulis mapped_char ke layar
+                        if (keyboard_state.buffer_index < KEYBOARD_BUFFER_SIZE) {
+                            framebuffer_write(get_resolution_row(), get_resolution_col(), mapped_char, 0xF, 0);
+                            keyboard_state.keyboard_buffer[keyboard_state.buffer_index] = mapped_char;
+                            // geser kursor ke kanan;
+                            tracker++;     
+                            keyboard_state.buffer_index++;    
+                            framebuffer_set_cursor(get_resolution_row(), get_resolution_col());
+                            mapped_char = (char)*(MEMORY_FRAMEBUFFER + tracker*2);
+                            framebuffer_write(get_resolution_row(), get_resolution_col(), mapped_char, 0xF, 0); 
+                        }
+                    }
                 }
             }
         }
-      keyboard_state.buffer_index++;
     }
     pic_ack(IRQ_KEYBOARD);
 }

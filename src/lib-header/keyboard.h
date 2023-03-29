@@ -35,7 +35,7 @@ extern int16_t tracker;
 struct KeyboardDriverState {
     bool    read_extended_mode;
     bool    keyboard_input_on;
-    uint8_t buffer_index;
+    int16_t buffer_index;
     char    keyboard_buffer[KEYBOARD_BUFFER_SIZE];
 } __attribute((packed));
 
