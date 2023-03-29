@@ -77,6 +77,41 @@ void initialize_filesystem_fat32(void) {
     }
 }
 
+
+int8_t read_directory(struct FAT32DriverRequest request){
+    // inisialisasi directory table parent
+    struct FAT32DirectoryTable dir_table = {0};
+
+    // mendapatkan directory table dari parent
+    read_clusters(&dir_table, request.parent_cluster_number, 1);
+
+    // traversal parent directory untuk mencari file/folder yang diinginkan
+    uint16_t idx = 0;
+    int8_t found=-1;
+
+    // found=0 jika ketemu dan folder
+    // found=1 jika ketemu tapi bukan folder
+    // found=2 ga ketemu
+
+    //code: 0 success - 1 not a folder - 2 not found - -1 unknown
+    for (unsigned int i = 0; i < (CLUSTER_SIZE / sizeof(struct FAT32DirectoryEntry)); i++) {
+        if(memcmp(dir_table.table[i].name, request.name, sizeof(request.name)) == 0) {
+            if(memcmp(dir_table.table[i].ext, request.ext, sizeof(request.ext)) == 0) {
+                found=1;
+            }
+            else{
+                found=0;
+                return 0;
+            }
+            idx = i;
+        }
+    }
+    if(idx==0){
+        return 2;
+    }
+    return found;
+}
+
 int8_t delete(struct FAT32DriverRequest request) {
     // inisialisasi directory table parent
     struct FAT32DirectoryTable dir_table = {0};
