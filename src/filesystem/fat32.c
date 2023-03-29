@@ -112,6 +112,25 @@ int8_t read_directory(struct FAT32DriverRequest request){
     return found;
 }
 
+void write_clusters(const void *ptr, uint32_t cluster_number, uint8_t cluster_count) {
+
+}
+
+void read_clusters(void *ptr, uint32_t cluster_number, uint8_t cluster_count) {
+
+}
+
+/* -- CRUD Operation -- */
+
+
+int8_t read(struct FAT32DriverRequest request){
+
+}
+
+int8_t write(struct FAT32DriverRequest request) {
+    
+}
+
 int8_t delete(struct FAT32DriverRequest request) {
     // inisialisasi directory table parent
     struct FAT32DirectoryTable dir_table = {0};
@@ -149,6 +168,11 @@ int8_t delete(struct FAT32DriverRequest request) {
         
         // mendapatkan directory table dari dir yang akan didelete
         read_clusters(&tobedeleted_dir_table, tobedeleted_cluster_number, 1);
+
+        // traversal untuk mengecek merupakan directory root atau bukan
+        if (tobedeleted_entry.name[0] == 'r' && tobedeleted_entry.name[0] == 'o' && tobedeleted_entry.name[0] == 'o' && tobedeleted_entry.name[0] == 't') {
+            return -1;
+        }
 
         // traversal directory table dari dir yang akan didelete untuk mengecek folder kosong atau tidak
         for (unsigned int i = 1; i < (CLUSTER_SIZE / sizeof(struct FAT32DirectoryEntry)); i++) {

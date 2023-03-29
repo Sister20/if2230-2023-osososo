@@ -141,8 +141,6 @@ struct FAT32DriverRequest {
 
 
 
-
-
 /* -- Driver Interfaces -- */
 
 /**
@@ -202,10 +200,6 @@ void write_clusters(const void *ptr, uint32_t cluster_number, uint8_t cluster_co
  */
 void read_clusters(void *ptr, uint32_t cluster_number, uint8_t cluster_count);
 
-
-
-
-
 /* -- CRUD Operation -- */
 
 /**
@@ -246,4 +240,4 @@ int8_t write(struct FAT32DriverRequest request);
  */
 int8_t delete(struct FAT32DriverRequest request);
 
-#endif
+#endif  
