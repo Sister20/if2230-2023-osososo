@@ -115,6 +115,11 @@ int8_t delete(struct FAT32DriverRequest request) {
         // mendapatkan directory table dari dir yang akan didelete
         read_clusters(&tobedeleted_dir_table, tobedeleted_cluster_number, 1);
 
+        // traversal untuk mengecek merupakan directory root atau bukan
+        if (tobedeleted_entry.name[0] == 'r' && tobedeleted_entry.name[0] == 'o' && tobedeleted_entry.name[0] == 'o' && tobedeleted_entry.name[0] == 't') {
+            return -1;
+        }
+
         // traversal directory table dari dir yang akan didelete untuk mengecek folder kosong atau tidak
         for (unsigned int i = 1; i < (CLUSTER_SIZE / sizeof(struct FAT32DirectoryEntry)); i++) {
             if (tobedeleted_dir_table.table[i].name[0] != 0) {
