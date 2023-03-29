@@ -77,3 +77,4 @@ void initialize_filesystem_fat32(void) {
         read_blocks(&driver_state.fat_table, FAT_CLUSTER_NUMBER, 1);
     }
 }
+
