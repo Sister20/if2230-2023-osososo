@@ -122,6 +122,12 @@ int8_t read_directory(struct FAT32DriverRequest request){
 
 
 int8_t read(struct FAT32DriverRequest request) {
+    // inisialisasi directory table parent
+    struct FAT32DirectoryTable dir_table = {0};
+
+    // mendapatkan directory table dari parent
+    read_clusters(&dir_table, request.parent_cluster_number, 1);
+
     // Check if file exists and is not a directory
 
     //kalau request bukan file(tapi folder)
