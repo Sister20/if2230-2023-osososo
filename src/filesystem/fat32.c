@@ -18,18 +18,6 @@ uint32_t cluster_to_lba(uint32_t cluster) {
     return CLUSTER_BLOCK_COUNT*cluster;
 }
 
-void write_clusters(const void *ptr, uint32_t cluster_number, uint8_t cluster_count) {
-    uint32_t lba = cluster_to_lba(cluster_number);
-    uint32_t block_count = cluster_to_lba(cluster_count);
-    write_blocks(ptr, lba, block_count);
-}
-
-void read_clusters(void *ptr, uint32_t cluster_number, uint8_t cluster_count) {
-    uint32_t lba = cluster_to_lba(cluster_number);
-    uint32_t block_count = cluster_to_lba(cluster_count);
-    read_blocks(ptr, lba, block_count);
-}
-
 void init_directory_table(struct FAT32DirectoryTable *dir_table, char *name, uint32_t parent_dir_cluster) {
     memcpy(dir_table->table[0].name, name, sizeof(name));
 
@@ -76,7 +64,19 @@ void initialize_filesystem_fat32(void) {
         read_clusters(&driver_state.fat_table, FAT_CLUSTER_NUMBER, 1);
     }
 }
+void write_clusters(const void *ptr, uint32_t cluster_number, uint8_t cluster_count) {
+    uint32_t lba = cluster_to_lba(cluster_number);
+    uint32_t block_count = cluster_to_lba(cluster_count);
+    write_blocks(ptr, lba, block_count);
+}
 
+void read_clusters(void *ptr, uint32_t cluster_number, uint8_t cluster_count) {
+    uint32_t lba = cluster_to_lba(cluster_number);
+    uint32_t block_count = cluster_to_lba(cluster_count);
+    read_blocks(ptr, lba, block_count);
+}
+
+/* -- CRUD Operation -- */
 
 int8_t read_directory(struct FAT32DriverRequest request){
     // inisialisasi directory table parent
@@ -89,6 +89,10 @@ int8_t read_directory(struct FAT32DriverRequest request){
     uint16_t idx = 0;
     int8_t found=-1;
 
+    if (request.buffer_size < entry.filesize) {
+        return -1;
+    }
+
     // found=0 jika ketemu dan folder
     // found=1 jika ketemu tapi bukan folder
     // found=2 ga ketemu
@@ -97,11 +101,15 @@ int8_t read_directory(struct FAT32DriverRequest request){
     for (unsigned int i = 0; i < (CLUSTER_SIZE / sizeof(struct FAT32DirectoryEntry)); i++) {
         if(memcmp(dir_table.table[i].name, request.name, sizeof(request.name)) == 0) {
             if(memcmp(dir_table.table[i].ext, request.ext, sizeof(request.ext)) == 0) {
-                found=1;
+                if(dir_table[i].ext[0]=='\0'){
+                    return 0;
+                }
+                else{
+                    return 1;
+                }
             }
             else{
-                found=0;
-                return 0;
+                found=1;
             }
             idx = i;
         }
@@ -112,11 +120,27 @@ int8_t read_directory(struct FAT32DriverRequest request){
     return found;
 }
 
-/* -- CRUD Operation -- */
 
+int8_t read(struct FAT32DriverRequest request) {
+    // Check if file exists and is not a directory
 
-int8_t read(struct FAT32DriverRequest request){
+    //kalau request bukan file(tapi folder)
+    if(request.ext[0]=='\0'){
+        return 1;
+    }
 
+    // Check if buffer is large enough to hold file
+    if (request.buffer_size < entry.filesize) {
+        return 2; // Not enough buffer
+    }
+
+    // iterasi sebanyak cluster yang dibutuhkan
+    for (unsigned int i = 0; i < (CLUSTER_SIZE / sizeof(struct FAT32DirectoryEntry)); i++) {
+        if (memcmp(dir_table.table[i].name, request.name, sizeof(request.name)) == 0 && (memcmp(dir_table.table[i].ext, request.ext, sizeof(request.ext)) == 0)) {
+            return 0;
+        }
+    }
+    return 3;
 }
 
 int8_t write(struct FAT32DriverRequest request) {
@@ -154,7 +178,7 @@ int8_t delete(struct FAT32DriverRequest request) {
     uint8_t deleteSpace[CLUSTER_SIZE] = {0}; 
 
     // mengecek sebuah directory atau bukan
-    if (request.ext[0] == 0 && request.ext[1] == 0 && request.ext[1] == 0) {
+    if (request.ext[0] == 0 && request.ext[1] == 0 && request.ext[2] == 0) {
         // inisialisasi directory table pada dir yang akan didelete
         struct FAT32DirectoryTable tobedeleted_dir_table = {0};
         
