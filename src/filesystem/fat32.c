@@ -77,6 +77,28 @@ void initialize_filesystem_fat32(void) {
     }
 }
 
+void write_clusters(const void *ptr, uint32_t cluster_number, uint8_t cluster_count) {
+
+}
+
+void read_clusters(void *ptr, uint32_t cluster_number, uint8_t cluster_count) {
+
+}
+
+/* -- CRUD Operation -- */
+
+int8_t read_directory(struct FAT32DriverRequest request) {
+
+}
+
+int8_t read(struct FAT32DriverRequest request){
+
+}
+
+int8_t write(struct FAT32DriverRequest request) {
+    
+}
+
 int8_t delete(struct FAT32DriverRequest request) {
     // inisialisasi directory table parent
     struct FAT32DirectoryTable dir_table = {0};
