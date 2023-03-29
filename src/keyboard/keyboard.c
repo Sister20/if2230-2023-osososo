@@ -124,10 +124,6 @@ void keyboard_isr(void){
             } else {
                 if (mapped_char != 0) {
                     if (mapped_char == '\n') {
-                        // Stop processing
-                        for (int i = 0; i < keyboard_state.buffer_index; i++) {
-                            framebuffer_write(i/80, i%80, keyboard_state.keyboard_buffer[i], 0xF, 0);
-                        }
                         keyboard_state.buffer_index = 0;
                         mapped_char = ' ';
                         keyboard_state.keyboard_input_on = FALSE;
