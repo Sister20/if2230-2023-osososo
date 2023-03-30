@@ -100,9 +100,9 @@ int8_t read_directory(struct FAT32DriverRequest request){
     for (unsigned int i = 0; i < (CLUSTER_SIZE / sizeof(struct FAT32DirectoryEntry)); i++) {
         if(memcmp(dir_table.table[i].name, request.name, 8) == 0) {
             if(memcmp(dir_table.table[i].ext, request.ext, 3) == 0) {
-                if(dir_table.table[i].ext[0]=='\0'){
-                    uint32_t temp=(dir_table.table[i].cluster_high<<16) + dir_table.table[i].cluster_low;
-                    read_clusters(&request.buf + CLUSTER_SIZE*0,temp,1);
+                if(dir_table.table[i].ext[0]==0){
+                    uint32_t toberead_cluster_number = (uint32_t)(dir_table.table[i].cluster_high << 16) + (uint32_t)dir_table.table[i].cluster_low; 
+                    read_clusters(request.buf,toberead_cluster_number,1);
                     return 0;
                 }
                 else{
@@ -130,51 +130,42 @@ int8_t read(struct FAT32DriverRequest request) {
     // mendapatkan directory table dari parent
     read_clusters(&dir_table, request.parent_cluster_number, 1);
 
-    // Check if file exists and is not a directory
-
-    //kalau request bukan file(tapi folder)
-    if(request.buffer_size == 0){
-        return 1;
-    }
-
-    // Check if buffer is large enough to hold file
-    // if (request.buffer_size < dir_table.table[0].file_size) {
-    //     return 2; // Not enough buffer
-    // }
 
     // iterasi sebanyak cluster yang dibutuhkan untuk mencari file yang diinginkan
-    int found=3;
     int idx=0;
-    // int limit;
     for (unsigned int i = 0; i < (CLUSTER_SIZE / sizeof(struct FAT32DirectoryEntry)); i++) {
         if (memcmp(dir_table.table[i].name, request.name, 8) == 0 && (memcmp(dir_table.table[i].ext, request.ext, 3) == 0)) {
-            found=0;
             idx=i;
             break;
-            // read_clusters(&request.buf + CLUSTER_SIZE*idx, dir_table.table[i].cluster_low,1);
-            // idx++;
-            // if(idx==0){
-            //     // limit=request.buffer_size/CLUSTER_SIZE;
-            // }
         }
+    }
+
+    if (idx == 0) {
+        return 3;
     }
 
     struct FAT32DirectoryEntry file = dir_table.table[idx];
     uint32_t cluster_number = (file.cluster_high<<16) + file.cluster_low;
 
-    // driver_state.fat_table.cluster_map[cluster_number]
-    int t=0;
-    while(driver_state.fat_table.cluster_map[cluster_number]!=FAT32_FAT_END_OF_FILE){
-        read_clusters(&request.buf + CLUSTER_SIZE*t,cluster_number,1);
-        t++;
-        cluster_number=driver_state.fat_table.cluster_map[cluster_number];
+    // Check if file exists and is not a directory
+    if (file.attribute == ATTR_SUBDIRECTORY) {
+        return 1;
     }
 
-    //kalau ga ketemu
-    if(found==3) return 3;
-    //kalau ketemu
-    return found;
-    
+    // Check if buffer is large enough to hold file
+    if (request.buffer_size < file.filesize) {
+        return 2; // Not enough buffer
+    }
+
+    // driver_state.fat_table.cluster_map[cluster_number]
+    uint16_t offset = 0;
+    while(cluster_number != FAT32_FAT_END_OF_FILE) {
+        read_clusters(request.buf + CLUSTER_SIZE*offset, cluster_number, 1);
+        cluster_number = driver_state.fat_table.cluster_map[cluster_number];
+        offset++;
+    }
+
+    return 0;    
 }
 
 
