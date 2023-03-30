@@ -78,72 +78,102 @@ void read_clusters(void *ptr, uint32_t cluster_number, uint8_t cluster_count) {
 
 /* -- CRUD Operation -- */
 
-// int8_t read_directory(struct FAT32DriverRequest request){
-//     // inisialisasi directory table parent
-//     struct FAT32DirectoryTable dir_table = {0};
+int8_t read_directory(struct FAT32DriverRequest request){
+    // inisialisasi directory table parent
+    struct FAT32DirectoryTable dir_table = {0};
 
-//     // mendapatkan directory table dari parent
-//     read_clusters(&dir_table, request.parent_cluster_number, 1);
+    // mendapatkan directory table dari parent
+    read_clusters(&dir_table, request.parent_cluster_number, 1);
 
-//     // traversal parent directory untuk mencari file/folder yang diinginkan
-//     uint16_t idx = 0;
-//     int8_t found=-1;
+    // traversal parent directory untuk mencari file/folder yang diinginkan
+    uint16_t idx = 0;
+    int8_t found=-1;
 
-//     // found=0 jika ketemu dan folder
-//     // found=1 jika ketemu tapi bukan folder
-//     // found=2 ga ketemu
+    // found=0 jika ketemu dan folder
+    // found=1 jika ketemu tapi bukan folder
+    // found=2 ga ketemu
 
-//     //code: 0 success - 1 not a folder - 2 not found - -1 unknown
-//     for (unsigned int i = 0; i < (CLUSTER_SIZE / sizeof(struct FAT32DirectoryEntry)); i++) {
-//         if(memcmp(dir_table.table[i].name, request.name, sizeof(request.name)) == 0) {
-//             if(memcmp(dir_table.table[i].ext, request.ext, sizeof(request.ext)) == 0) {
-//                 if(dir_table.table[i].ext[0]=='\0'){
-//                     return 0;
-//                 }
-//                 else{
-//                     return 1;
-//                 }
-//             }
-//             else{
-//                 found=1;
-//             }
-//             idx = i;
-//         }
-//     }
-//     if(idx==0){
-//         return 2;
-//     }
-//     return found;
-// }
+    //code: 0 success - 1 not a folder - 2 not found - -1 unknown
+    for (unsigned int i = 0; i < (CLUSTER_SIZE / sizeof(struct FAT32DirectoryEntry)); i++) {
+        if(memcmp(dir_table.table[i].name, request.name, sizeof(request.name)) == 0) {
+            if(memcmp(dir_table.table[i].ext, request.ext, sizeof(request.ext)) == 0) {
+                if(dir_table.table[i].ext[0]=='\0'){
+                    uint32_t temp=(dir_table.table[i].cluster_high<<16) + dir_table.table[i].cluster_low;
+                    read_clusters(&request.buf + CLUSTER_SIZE*0,temp,1);
+                    return 0;
+                }
+                else{
+                    return 1;
+                }
+            }
+            else{
+                found=1;
+            }
+            idx = i;
+        }
+    }
+    if(idx==0){
+        return 2;
+    }
+    return found;
+}
 
+int8_t read(struct FAT32DriverRequest request) {
+    // Error code: 0 success - 1 not a file - 2 not enough buffer - 3 not found - -1 unknown
 
-// int8_t read(struct FAT32DriverRequest request) {
-//     // inisialisasi directory table parent
-//     struct FAT32DirectoryTable dir_table = {0};
+    // inisialisasi directory table parent
+    struct FAT32DirectoryTable dir_table = {0};
 
-//     // mendapatkan directory table dari parent
-//     read_clusters(&dir_table, request.parent_cluster_number, 1);
+    // mendapatkan directory table dari parent
+    read_clusters(&dir_table, request.parent_cluster_number, 1);
 
-//     // Check if file exists and is not a directory
+    // Check if file exists and is not a directory
 
-//     //kalau request bukan file(tapi folder)
-//     if(request.ext[0]=='\0'){
-//         return 1;
-//     }
+    //kalau request bukan file(tapi folder)
+    if(request.ext[0]=='\0'){
+        return 1;
+    }
 
-//     // Check if buffer is large enough to hold file
-//     // if (request.buffer_size < entry.filesize) {
-//     //     return 2; // Not enough buffer
-//     // }
+    // Check if buffer is large enough to hold file
+    // if (request.buffer_size < dir_table.table[0].file_size) {
+    //     return 2; // Not enough buffer
+    // }
 
-//     // iterasi sebanyak cluster yang dibutuhkan
-//     for (unsigned int i = 0; i < (CLUSTER_SIZE / sizeof(struct FAT32DirectoryEntry)); i++) {
-//         if (memcmp(dir_table.table[i].name, request.name, sizeof(request.name)) == 0 && (memcmp(dir_table.table[i].ext, request.ext, sizeof(request.ext)) == 0)) {
-//             return 0;
-//         }
-//     }
-//     return 3;
-// }
+    // iterasi sebanyak cluster yang dibutuhkan untuk mencari file yang diinginkan
+    int found=3;
+    int idx=0;
+    // int limit;
+    for (unsigned int i = 0; i < (CLUSTER_SIZE / sizeof(struct FAT32DirectoryEntry)); i++) {
+        if (memcmp(dir_table.table[i].name, request.name, sizeof(request.name)) == 0 && (memcmp(dir_table.table[i].ext, request.ext, sizeof(request.ext)) == 0)) {
+            found=0;
+            idx=i;
+            break;
+            // read_clusters(&request.buf + CLUSTER_SIZE*idx, dir_table.table[i].cluster_low,1);
+            // idx++;
+            // if(idx==0){
+            //     // limit=request.buffer_size/CLUSTER_SIZE;
+            // }
+        }
+    }
+
+    struct FAT32DirectoryEntry file = dir_table.table[idx];
+    uint32_t cluster_number = (file.cluster_high<<16) + file.cluster_low;
+
+    // driver_state.fat_table.cluster_map[cluster_number]
+    int t=0;
+    while(driver_state.fat_table.cluster_map[cluster_number]!=FAT32_FAT_END_OF_FILE){
+        read_clusters(&request.buf + CLUSTER_SIZE*t,cluster_number,1);
+        t++;
+        cluster_number=driver_state.fat_table.cluster_map[cluster_number];
+    }
+
+    //kalau ga ketemu
+    if(found==3) return 3;
+    //kalau ketemu
+    return found;
+    
+}
+
 
 // Error code: 0 success - 1 file/folder already exist - 2 invalid parent cluster - -1 unknown
 // int8_t write(struct FAT32DriverRequest request) {
