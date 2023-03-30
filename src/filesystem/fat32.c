@@ -98,8 +98,8 @@ int8_t read_directory(struct FAT32DriverRequest request){
 
     //code: 0 success - 1 not a folder - 2 not found - -1 unknown
     for (unsigned int i = 0; i < (CLUSTER_SIZE / sizeof(struct FAT32DirectoryEntry)); i++) {
-        if(memcmp(dir_table.table[i].name, request.name, sizeof(request.name)) == 0) {
-            if(memcmp(dir_table.table[i].ext, request.ext, sizeof(request.ext)) == 0) {
+        if(memcmp(dir_table.table[i].name, request.name, 8) == 0) {
+            if(memcmp(dir_table.table[i].ext, request.ext, 3) == 0) {
                 if(dir_table.table[i].ext[0]=='\0'){
                     uint32_t temp=(dir_table.table[i].cluster_high<<16) + dir_table.table[i].cluster_low;
                     read_clusters(&request.buf + CLUSTER_SIZE*0,temp,1);
@@ -133,7 +133,7 @@ int8_t read(struct FAT32DriverRequest request) {
     // Check if file exists and is not a directory
 
     //kalau request bukan file(tapi folder)
-    if(request.ext[0]=='\0'){
+    if(request.buffer_size == 0){
         return 1;
     }
 
@@ -147,7 +147,7 @@ int8_t read(struct FAT32DriverRequest request) {
     int idx=0;
     // int limit;
     for (unsigned int i = 0; i < (CLUSTER_SIZE / sizeof(struct FAT32DirectoryEntry)); i++) {
-        if (memcmp(dir_table.table[i].name, request.name, sizeof(request.name)) == 0 && (memcmp(dir_table.table[i].ext, request.ext, sizeof(request.ext)) == 0)) {
+        if (memcmp(dir_table.table[i].name, request.name, 8) == 0 && (memcmp(dir_table.table[i].ext, request.ext, 3) == 0)) {
             found=0;
             idx=i;
             break;
@@ -199,6 +199,7 @@ int8_t write(struct FAT32DriverRequest request) {
                 return 1;
             }
         }
+    // if it's a file
     } else {
         for (unsigned int i = 0; i < (CLUSTER_SIZE / sizeof(struct FAT32DirectoryEntry)); i++) {
             if ((memcmp(&dir_table.table[i].name, &request.name, 8) == 0) && (memcmp(&dir_table.table[i].ext, &request.ext, 3) == 0)) {
@@ -223,6 +224,7 @@ int8_t write(struct FAT32DriverRequest request) {
         for (uint16_t i = 3; i < CLUSTER_MAP_SIZE; i++) {
             if (driver_state.fat_table.cluster_map[i] == FAT32_FAT_EMPTY_ENTRY) {
                 empty_cluster_number = i;
+                driver_state.fat_table.cluster_map[i] = FAT32_FAT_END_OF_FILE;
                 break;
             }
         }
@@ -236,6 +238,10 @@ int8_t write(struct FAT32DriverRequest request) {
         
         // Update parent directory entry
         dir_table.table[idx_empty_dir] = new_table.table[0];
+
+        // Update the storage.bin
+        write_clusters(&dir_table, request.parent_cluster_number, 1);
+        write_clusters(&driver_state.fat_table, FAT_CLUSTER_NUMBER, 1);
     } else {
         // number of clusters needed
         uint16_t n_clusters = ceil_divide(request.buffer_size, CLUSTER_SIZE);   
@@ -258,22 +264,24 @@ int8_t write(struct FAT32DriverRequest request) {
             driver_state.fat_table.cluster_map[cluster_number_list[i]] = cluster_number_list[i+1];
             write_clusters(request.buf + CLUSTER_SIZE*i, cluster_number_list[i], 1);
         }
-
+        driver_state.fat_table.cluster_map[cluster_number_list[n_clusters - 1]] = FAT32_FAT_END_OF_FILE;
         write_clusters(request.buf + CLUSTER_SIZE*(n_clusters - 1), cluster_number_list[n_clusters - 1], 1);
 
         struct FAT32DirectoryEntry new_entry = {0};
-        memcpy(new_entry.name, request.name, sizeof(new_entry.name));
-        memcpy(new_entry.ext, request.ext, sizeof(new_entry.ext));
+        memcpy(new_entry.name, request.name, 8);
+        memcpy(new_entry.ext, request.ext, 3);
         new_entry.user_attribute = UATTR_NOT_EMPTY;
         new_entry.cluster_high = (cluster_number_list[0] >> 16) & 0xffff;
         new_entry.cluster_low = cluster_number_list[0] & 0xffff;
         new_entry.filesize = request.buffer_size;
         dir_table.table[idx_empty_dir] = new_entry;
+
+        // Update the storage.bin
+        write_clusters(&dir_table, request.parent_cluster_number, 1);
+        write_clusters(&driver_state.fat_table, FAT_CLUSTER_NUMBER, 1);
     }
 
-    // Update the storage.bin
-    write_clusters(&dir_table, request.parent_cluster_number, 1);
-    read_clusters(&driver_state.fat_table, ROOT_CLUSTER_NUMBER, 1);
+
     return 0; // Success
 }
 
@@ -285,7 +293,6 @@ int8_t delete(struct FAT32DriverRequest request) {
     read_clusters(&dir_table, request.parent_cluster_number, 1);
 
     // traversal parent directory untuk mencari file/folder yang diinginkan
-
     uint16_t idx = 0;
     if (request.buffer_size == 0) {
         for (unsigned int i = 0; i < (CLUSTER_SIZE / sizeof(struct FAT32DirectoryEntry)); i++) {
@@ -340,12 +347,34 @@ int8_t delete(struct FAT32DriverRequest request) {
                 return 2;
             }
         }
+        driver_state.fat_table.cluster_map[tobedeleted_cluster_number] = FAT32_FAT_EMPTY_ENTRY;
+        write_clusters(&driver_state.fat_table, FAT_CLUSTER_NUMBER, 1);
+
+        // menuliskan deletedSpace ke nomor cluster yang akan didelete
+        dir_table.table[idx] = deletedEntry;
+        write_clusters(&dir_table, request.parent_cluster_number, 1);
+        write_clusters(&deleteSpace, tobedeleted_cluster_number, 1);
+        write_clusters(&driver_state.fat_table, FAT_CLUSTER_NUMBER, 1);        
+    } else {
+        dir_table.table[idx] = deletedEntry;
+        write_clusters(&dir_table, request.parent_cluster_number, 1);
+        
+        uint32_t temp = tobedeleted_cluster_number;
+        while (tobedeleted_cluster_number != FAT32_FAT_END_OF_FILE) {
+            
+            tobedeleted_cluster_number = driver_state.fat_table.cluster_map[tobedeleted_cluster_number];
+            
+            write_clusters(&deleteSpace, temp, 1);
+            driver_state.fat_table.cluster_map[temp] = FAT32_FAT_EMPTY_ENTRY;
+
+            // if (tobedeleted_cluster_number == FAT32_FAT_END_OF_FILE) {
+            //     driver_state.fat_table.cluster_map[temp] = FAT32_FAT_EMPTY_ENTRY;
+            // }
+            
+            temp = tobedeleted_cluster_number;
+        }
+        write_clusters(&driver_state.fat_table, FAT_CLUSTER_NUMBER, 1);
     }
-    // menuliskan deletedSpace ke nomor cluster yang akan didelete
-    dir_table.table[idx] = deletedEntry;
-    write_clusters(&dir_table, request.parent_cluster_number, 1);
-    write_clusters(&deleteSpace, tobedeleted_cluster_number, 1);
-    read_clusters(&driver_state.fat_table, ROOT_CLUSTER_NUMBER, 1);
     return 0;
 }
 
