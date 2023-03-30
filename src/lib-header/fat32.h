@@ -104,9 +104,6 @@ struct FAT32DirectoryTable {
 } __attribute__((packed));
 
 
-
-
-
 /* -- FAT32 Driver -- */
 
 /**
