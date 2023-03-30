@@ -240,4 +240,7 @@ int8_t write(struct FAT32DriverRequest request);
  */
 int8_t delete(struct FAT32DriverRequest request);
 
+// pembagian dengan fungsi ceiling (pembulatan ke atas)
+uint16_t ceil_divide(uint32_t numerator, uint32_t denominator);
+
 #endif  
