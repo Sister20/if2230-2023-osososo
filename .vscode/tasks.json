@@ -23,7 +23,7 @@
             "isBackground": true,
             "dependsOn": "Build OS",
             "options": {
-                "cwd": "${workspaceFolder}/bin"
+                "cwd": "${workspaceFolder}"
             },
             "problemMatcher": {
                 "pattern": [
