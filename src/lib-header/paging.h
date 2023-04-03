@@ -10,8 +10,6 @@
 extern struct PageDirectory _paging_kernel_page_directory;
 
 
-
-
 /**
  * Page Directory Entry Flag, only first 8 bit
  * 
@@ -20,13 +18,13 @@ extern struct PageDirectory _paging_kernel_page_directory;
  */
 struct PageDirectoryEntryFlag {
     uint8_t present_bit : 1;
-    uint8_t read_write_bit : 1;
+    uint8_t write_bit : 1;
     uint8_t user_supervisor_bit : 1;
     uint8_t page_level_write_through_bit : 1;
     uint8_t page_level_cache_disable_bit : 1;
     uint8_t accessed_bit : 1;
     uint8_t reserved_bit : 1;
-    uint8_t page_size_bit : 1;  // Set to 1 to indicate a 4 MB page size
+    uint8_t use_pagesize_4_mb : 1;  // Set to 1 to indicate a 4 MB page size
 } __attribute__((packed));
 
 /**
@@ -43,12 +41,10 @@ struct PageDirectoryEntryFlag {
 struct PageDirectoryEntry {
     struct PageDirectoryEntryFlag flag;
     uint16_t global_page : 1;
-    uint16_t reserved : 11;
-    uint16_t page_size : 2;
-    uint16_t reserved2 : 1;
+    uint16_t reserved : 3;
     uint16_t pat : 1;
-    uint16_t reserved3 : 2;
-    uint64_t page_base_address : 40;
+    uint16_t higher_address : 9; // masih ambigu
+    uint16_t lower_address : 10;
 } __attribute__((packed));
 
 /**
@@ -61,7 +57,7 @@ struct PageDirectoryEntry {
  * @param table Fixed-width array of PageDirectoryEntry with size PAGE_ENTRY_COUNT
  */
 struct PageDirectory {
-    // TODO : Implement
+     struct PageDirectoryEntry table[PAGE_ENTRY_COUNT] __attribute__((aligned(0x1000)));
 } __attribute__((packed));
 
 /**
