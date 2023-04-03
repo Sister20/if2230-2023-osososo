@@ -19,8 +19,14 @@ extern struct PageDirectory _paging_kernel_page_directory;
  * ...
  */
 struct PageDirectoryEntryFlag {
-    uint8_t present_bit        : 1;
-    // TODO : Continue. Note: Only first 8 bit flags
+    uint8_t present_bit : 1;
+    uint8_t read_write_bit : 1;
+    uint8_t user_supervisor_bit : 1;
+    uint8_t page_level_write_through_bit : 1;
+    uint8_t page_level_cache_disable_bit : 1;
+    uint8_t accessed_bit : 1;
+    uint8_t reserved_bit : 1;
+    uint8_t page_size_bit : 1;  // Set to 1 to indicate a 4 MB page size
 } __attribute__((packed));
 
 /**
@@ -36,9 +42,15 @@ struct PageDirectoryEntryFlag {
  */
 struct PageDirectoryEntry {
     struct PageDirectoryEntryFlag flag;
-    uint16_t global_page    : 1;
-    // TODO : Continue, Use uint16_t + bitfield here, Do not use uint8_t
+    uint16_t global_page : 1;
+    uint16_t reserved : 11;
+    uint16_t page_size : 2;
+    uint16_t reserved2 : 1;
+    uint16_t pat : 1;
+    uint16_t reserved3 : 2;
+    uint64_t page_base_address : 40;
 } __attribute__((packed));
+
 
 /**
  * Page Directory, contain array of PageDirectoryEntry.
