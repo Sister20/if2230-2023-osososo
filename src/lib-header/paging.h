@@ -51,7 +51,6 @@ struct PageDirectoryEntry {
     uint64_t page_base_address : 40;
 } __attribute__((packed));
 
-
 /**
  * Page Directory, contain array of PageDirectoryEntry.
  * Note: This data structure not only can be manipulated by kernel, 
