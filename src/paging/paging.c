@@ -31,9 +31,31 @@ void update_page_directory_entry(void *physical_addr, void *virtual_addr, struct
 
 int8_t allocate_single_user_page_frame(void *virtual_addr) {
     // Using default QEMU config (128 MiB max memory)
-    uint32_t last_physical_addr = (uint32_t) page_driver_state.last_available_physical_addr;
+    // uint32_t last_physical_addr = (uint32_t) page_driver_state.last_available_physical_addr;
 
-    // TODO : Allocate Page Directory Entry with user privilege
+    // // Find the page index in the page directory
+    // // uint32_t page_index = ((uint32_t) virtual_addr >> 22) & 0x3FF;
+
+    // // Allocate a new physical page
+    // uint8_t *new_physical_addr = (uint8_t*) last_physical_addr;
+    // page_driver_state.last_available_physical_addr += PAGE_FRAME_SIZE;
+
+    // // Map the virtual page to the physical page
+    // struct PageDirectoryEntryFlag flag = {
+    //     .present_bit       = 1,
+    //     .write_bit         = 1,
+    //     .user_supervisor_bit = 1,
+    //     .page_level_write_through_bit = 0,
+    //     .page_level_cache_disable_bit = 0,
+    //     .accessed_bit      = 0,
+    //     .reserved_bit      = 0,
+    //     .use_pagesize_4_mb = 1,
+    // };
+    // update_page_directory_entry(new_physical_addr, virtual_addr, flag);
+
+    // 2 line di bawah ini nnti diapus. 2 line ini cmn 3.1 ga error aja
+    page_driver_state = page_driver_state;
+    virtual_addr = virtual_addr;
     return -1;
 }
 

@@ -8,6 +8,7 @@
 #include "lib-header/idt.h"
 #include "lib-header/keyboard.h"
 #include "lib-header/fat32.h"
+#include "lib-header/paging.h"
 
 
 void kernel_setup(void) {
