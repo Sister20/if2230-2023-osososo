@@ -1,3 +1,8 @@
 {
     "debug.onTaskErrors": "debugAnyway",
+    "C_Cpp.errorSquiggles": "disabled",
+    "files.associations": {
+        "*.h": "c",
+        "*.c": "c"
+    },
 }

@@ -1,9 +1,16 @@
 #ifndef _GDT_H
 #define _GDT_H
 
-#include "lib-header/stdtype.h"
+#include "stdtype.h"
 
 #define GDT_MAX_ENTRY_COUNT 32
+
+#define GDT_USER_CODE_SEGMENT_SELECTOR   0x18
+#define GDT_USER_DATA_SEGMENT_SELECTOR   0x20
+#define GDT_TSS_SELECTOR                 0x28
+
+// Set GDT_TSS_SELECTOR with proper TSS values, accessing _interrupt_tss_entry
+void gdt_install_tss(void);
 
 extern struct GDTR _gdt_gdtr;
 
@@ -24,10 +31,22 @@ struct SegmentDescriptor {
     uint16_t base_low;
 
     // Next 16-bit (Bit 32 to 47)
-    uint8_t             base_mid;
+    uint8_t base_mid;   
     uint8_t type_bit   : 4;
     uint8_t non_system : 1;
+
     // TODO : Continue GDT definition
+    uint8_t descriptor_previlage_lavel: 2;
+    uint8_t present_bit: 1;
+
+    uint8_t segment_high: 4;
+
+    uint8_t avl: 1;
+    uint8_t long_mode_code_flag: 1;
+    uint8_t size_flag: 1;
+    uint8_t granulity_flag: 1;
+
+    uint8_t base_high;
 
 } __attribute__((packed));
 
@@ -48,7 +67,7 @@ struct GlobalDescriptorTable {
  * @param address GDT address, GDT should already defined properly
  */
 struct GDTR {
-    uint16_t                     size;
+    uint16_t  size;
     struct GlobalDescriptorTable *address;
 } __attribute__((packed));
 
