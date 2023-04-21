@@ -30,33 +30,36 @@ void update_page_directory_entry(void *physical_addr, void *virtual_addr, struct
 }
 
 int8_t allocate_single_user_page_frame(void *virtual_addr) {
-    // Using default QEMU config (128 MiB max memory)
-    // uint32_t last_physical_addr = (uint32_t) page_driver_state.last_available_physical_addr;
+    if (((uint32_t)virtual_addr < 0x400000) || ((uint32_t)virtual_addr >= 0xC0000000 && (uint32_t)virtual_addr < 0xC0400000)) {        
+        // Using default QEMU config (128 MiB max memory)
+        uint32_t last_physical_addr = (uint32_t) page_driver_state.last_available_physical_addr;
 
-    // // Find the page index in the page directory
-    // // uint32_t page_index = ((uint32_t) virtual_addr >> 22) & 0x3FF;
+        // Calculate the physical address for the new page frame
+        uint32_t new_physical_addr = last_physical_addr + PAGE_FRAME_SIZE;
 
-    // // Allocate a new physical page
-    // uint8_t *new_physical_addr = (uint8_t*) last_physical_addr;
-    // page_driver_state.last_available_physical_addr += PAGE_FRAME_SIZE;
+        if (new_physical_addr < 0x100000 || new_physical_addr >= 0x07FE0000) {
+            return -1;
+        }
 
-    // // Map the virtual page to the physical page
-    // struct PageDirectoryEntryFlag flag = {
-    //     .present_bit       = 1,
-    //     .write_bit         = 1,
-    //     .user_supervisor_bit = 1,
-    //     .page_level_write_through_bit = 0,
-    //     .page_level_cache_disable_bit = 0,
-    //     .accessed_bit      = 0,
-    //     .reserved_bit      = 0,
-    //     .use_pagesize_4_mb = 1,
-    // };
-    // update_page_directory_entry(new_physical_addr, virtual_addr, flag);
+        // Update the page directory with a new entry that maps the virtual address
+        struct PageDirectoryEntryFlag flag = {0};
+        flag.present_bit = 1;
+        flag.write_bit = 1;
+        flag.user_supervisor_bit = 1;
+        flag.use_pagesize_4_mb = 1;
 
-    // 2 line di bawah ini nnti diapus. 2 line ini cmn 3.1 ga error aja
-    page_driver_state = page_driver_state;
-    virtual_addr = virtual_addr;
-    return -1;
+        // update_page_directory to the physical address
+        update_page_directory_entry((void *) last_physical_addr, virtual_addr, flag);
+
+        // Update the last available physical address
+        page_driver_state.last_available_physical_addr = (uint8_t *) new_physical_addr;
+
+        return 0;
+    }
+
+    else {
+        return -1;
+    }
 }
 
 void flush_single_tlb(void *virtual_addr) {

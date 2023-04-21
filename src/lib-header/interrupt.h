@@ -5,6 +5,8 @@
 
 /* -- PIC constants -- */
 
+#define PAGE_FAULT           0xE
+
 // PIC interrupt offset
 #define PIC1_OFFSET          0x20
 #define PIC2_OFFSET          0x28

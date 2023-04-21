@@ -50,6 +50,8 @@ void main_interrupt_handler(
 ) {
     switch (int_number)
     {
+        case PAGE_FAULT:
+            __asm__("hlt"); 
         case PIC1_OFFSET + IRQ_TIMER:
 
             break;

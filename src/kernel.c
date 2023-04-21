@@ -21,55 +21,64 @@ void kernel_setup(void) {
     initialize_filesystem_fat32();
     keyboard_state_activate();
 
-    struct ClusterBuffer cbuf[5];
-    for (uint32_t i = 0; i < 5; i++)
-        for (uint32_t j = 0; j < CLUSTER_SIZE; j++)
-            cbuf[i].buf[j] = i + 'a';
-
-    struct FAT32DriverRequest request = {
-        .buf                   = cbuf,
-        .name                  = "ikanaide",
-        .ext                   = "uwu",
-        .parent_cluster_number = ROOT_CLUSTER_NUMBER,
-        .buffer_size           = 0,
-    } ;
-
-    write(request);  // Create folder "ikanaide"
-    memcpy(request.name, "kano1\0\0\0", 8);
-    write(request);  // Create folder "kano1"
-    memcpy(request.name, "ikanaide", 8);
-    memcpy(request.ext, "\0\0\0", 3);
-    // delete(request); // Delete first folder, thus creating hole in FS
-
-    memcpy(request.name, "daijoubu", 8);
-    request.buffer_size = 5*CLUSTER_SIZE;
-    write(request);  // Create fragmented file "daijoubu"
-
-    memcpy(request.name, "kano1\0\0\0", 8);
-    request.buffer_size = 0;
-    delete(request);
-    write(request);
-    
-    read_directory(request);
-
-    struct ClusterBuffer dbuf[5] = {0};
-    struct FAT32DriverRequest newRequest = {
-        .buf                   = dbuf,
-        .name                  = "daijoubu",
-        .ext                   = "\0\0\0",
-        .parent_cluster_number = ROOT_CLUSTER_NUMBER,
-        .buffer_size           = 5*CLUSTER_SIZE ,
-    };
-    
-    read(newRequest);
-    struct FAT32DirectoryTable dir_table = {0};
-    read_clusters(&dir_table, newRequest.parent_cluster_number, 1);
-    if (dir_table.table[0].attribute == ATTR_SUBDIRECTORY) {
-        delete(request);
+    void *virtual_addr = (void *) 0x200000;
+    if (allocate_single_user_page_frame(virtual_addr) == 0) {
+        *((uint8_t*) 0x200000) = 1;
     }
 
-    memcpy(newRequest.ext, "uwu", 3);
-    write(newRequest);
+    
+
+    
+
+    // struct ClusterBuffer cbuf[5];
+    // for (uint32_t i = 0; i < 5; i++)
+    //     for (uint32_t j = 0; j < CLUSTER_SIZE; j++)
+    //         cbuf[i].buf[j] = i + 'a';
+
+    // struct FAT32DriverRequest request = {
+    //     .buf                   = cbuf,
+    //     .name                  = "ikanaide",
+    //     .ext                   = "uwu",
+    //     .parent_cluster_number = ROOT_CLUSTER_NUMBER,
+    //     .buffer_size           = 0,
+    // } ;
+
+    // write(request);  // Create folder "ikanaide"
+    // memcpy(request.name, "kano1\0\0\0", 8);
+    // write(request);  // Create folder "kano1"
+    // memcpy(request.name, "ikanaide", 8);
+    // memcpy(request.ext, "\0\0\0", 3);
+    // // delete(request); // Delete first folder, thus creating hole in FS
+
+    // memcpy(request.name, "daijoubu", 8);
+    // request.buffer_size = 5*CLUSTER_SIZE;
+    // write(request);  // Create fragmented file "daijoubu"
+
+    // memcpy(request.name, "kano1\0\0\0", 8);
+    // request.buffer_size = 0;
+    // delete(request);
+    // write(request);
+    
+    // read_directory(request);
+
+    // struct ClusterBuffer dbuf[5] = {0};
+    // struct FAT32DriverRequest newRequest = {
+    //     .buf                   = dbuf,
+    //     .name                  = "daijoubu",
+    //     .ext                   = "\0\0\0",
+    //     .parent_cluster_number = ROOT_CLUSTER_NUMBER,
+    //     .buffer_size           = 5*CLUSTER_SIZE ,
+    // };
+    
+    // read(newRequest);
+    // struct FAT32DirectoryTable dir_table = {0};
+    // read_clusters(&dir_table, newRequest.parent_cluster_number, 1);
+    // if (dir_table.table[0].attribute == ATTR_SUBDIRECTORY) {
+    //     delete(request);
+    // }
+
+    // memcpy(newRequest.ext, "uwu", 3);
+    // write(newRequest);
     while (TRUE);
 }
 
