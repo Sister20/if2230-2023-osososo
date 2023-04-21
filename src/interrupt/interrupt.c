@@ -120,7 +120,7 @@ void activate_keyboard_interrupt(void) {
     out(PIC2_DATA, PIC_DISABLE_ALL_MASK);
 }
 
-struct TSSEntry _interrupt_tss_entry;
+struct TSSEntry _interrupt_tss_entry = {0};
 
 void set_tss_kernel_current_stack(void) {
     uint32_t stack_ptr;

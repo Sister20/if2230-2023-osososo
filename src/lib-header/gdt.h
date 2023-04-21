@@ -36,15 +36,15 @@ struct SegmentDescriptor {
     uint8_t non_system : 1;
 
     // TODO : Continue GDT definition
-    uint8_t descriptor_previlage_lavel: 2;
-    uint8_t present_bit: 1;
+    uint8_t descriptor_previlage_lavel: 2;  // DPL
+    uint8_t present_bit: 1;     // P
 
     uint8_t segment_high: 4;
 
     uint8_t avl: 1;
-    uint8_t long_mode_code_flag: 1;
-    uint8_t size_flag: 1;
-    uint8_t granulity_flag: 1;
+    uint8_t long_mode_code_flag: 1; // L
+    uint8_t size_flag: 1;       // D/B
+    uint8_t granulity_flag: 1;      //G
 
     uint8_t base_high;
 
