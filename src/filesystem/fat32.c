@@ -19,7 +19,7 @@ uint32_t cluster_to_lba(uint32_t cluster) {
 }
 
 void init_directory_table(struct FAT32DirectoryTable *dir_table, char *name, uint32_t parent_dir_cluster) {
-    memcpy(dir_table->table[0].name, name, sizeof(name)*2);
+    memcpy(dir_table->table[0].name, name, 8);
 
     dir_table->table[0].attribute = ATTR_SUBDIRECTORY;
     dir_table->table[0].user_attribute = UATTR_NOT_EMPTY;

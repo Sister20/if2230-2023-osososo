@@ -23,7 +23,7 @@ void kernel_setup(void) {
 
     void *virtual_addr = (void *) 0x200000;
     if (allocate_single_user_page_frame(virtual_addr) == 0) {
-        *((uint8_t*) 0x200000) = 1;
+        *((uint8_t*) 0x200000) = 5;
     }
 
     
