@@ -1,6 +1,7 @@
 global loader                                 ; the entry symbol for ELF
 global enter_protected_mode                   ; go to protected mode
 global set_tss_register                       ; set tss register to GDT entry
+global kernel_execute_user_program            ; execute user program from kernel
 extern kernel_setup                           ; kernel C entrypoint
 extern _paging_kernel_page_directory          ; kernel page directory
 
@@ -82,13 +83,10 @@ flush_cs:
     mov es, ax
 
     ret
-
 set_tss_register:
     mov ax, 0x28 | 0   ; GDT TSS Selector, ring 0
     ltr ax
     ret
-    
-global kernel_execute_user_program            ; execute user program from kernel
 kernel_execute_user_program:
     mov  eax, 0x20 | 0x3
     mov  ds, ax
