@@ -38,9 +38,6 @@ void kernel_setup(void) {
     // Set TSS $esp pointer and jump into shell 
     set_tss_kernel_current_stack();
     kernel_execute_user_program((uint8_t*) 0);
-
-    keyboard_state_activate();
-
     while (TRUE);
 }
 

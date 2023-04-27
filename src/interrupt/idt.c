@@ -30,7 +30,11 @@ void initialize_idt() {
     memset(&idt, 0, sizeof(idt));
 
     // Set up interrupt handler / ISR stub
-    for (int i = 0x30; i < 0x3F; i++) {
+    for (int i = 0; i < 0x30; i++) {
+        set_interrupt_gate(i, isr_stub_table[i], GDT_KERNEL_CODE_SEGMENT_SELECTOR, 0);
+    }
+
+    for (int i = 0x30; i <= 0x3F; i++) {
         set_interrupt_gate(i, isr_stub_table[i], GDT_KERNEL_CODE_SEGMENT_SELECTOR, 0x3);
     }
     // Load interrupt descriptor table
