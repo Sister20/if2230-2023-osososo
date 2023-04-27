@@ -42,4 +42,8 @@ void framebuffer_set_cursor(uint8_t r, uint8_t c);
  */
 void framebuffer_clear(void);
 
+extern uint16_t pageTracker;
+
+void puts(void* restrict buff, const uint16_t count, uint8_t color);
+
 #endif

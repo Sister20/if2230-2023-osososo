@@ -4,6 +4,7 @@
 #include "../lib-header/stdmem.h"
 #include "../lib-header/idt.h"
 #include "../lib-header/fat32.h"
+#include "../lib-header/framebuffer.h"
 
 void io_wait(void) {
     out(0x80, 0);
@@ -127,7 +128,7 @@ void main_interrupt_handler(
 
             break;
     }
-    pic_ack(int_number - PIC1_OFFSET);
+    // pic_ack(int_number - PIC1_OFFSET);
 }
 
 void activate_keyboard_interrupt(void) {
@@ -163,6 +164,7 @@ void syscall(struct CPURegister cpu, __attribute__((unused)) struct InterruptSta
     }             
     else if (cpu.eax == 4) {
         keyboard_state_activate();
+        
         __asm__("sti"); // Due IRQ is disabled when main_interrupt_handler() called
         while (is_keyboard_blocking());
         char buf[KEYBOARD_BUFFER_SIZE];
@@ -170,6 +172,6 @@ void syscall(struct CPURegister cpu, __attribute__((unused)) struct InterruptSta
         memcpy((char *) cpu.ebx, buf, cpu.ecx);
     } 
     else if (cpu.eax == 5) {
-        // puts((char *) cpu.ebx, cpu.ecx, cpu.edx); // Modified puts() on kernel side
+        puts((char *) cpu.ebx, cpu.ecx, cpu.edx); // Modified puts() on kernel side 
     }
 }
