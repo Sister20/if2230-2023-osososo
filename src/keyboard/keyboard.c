@@ -40,6 +40,11 @@ void keyboard_state_deactivate(void){
   keyboard_state.keyboard_input_on = FALSE;
 }
 
+// clear keyboard buffer
+void clear_keyboard_buffer(void){
+  memset(keyboard_state.keyboard_buffer, 0, KEYBOARD_BUFFER_SIZE);
+}
+
 // Get keyboard buffer values - @param buf Pointer to char buffer, recommended size at least KEYBOARD_BUFFER_SIZE
 void get_keyboard_buffer(char *buf){
   memcpy(buf, keyboard_state.keyboard_buffer, KEYBOARD_BUFFER_SIZE);

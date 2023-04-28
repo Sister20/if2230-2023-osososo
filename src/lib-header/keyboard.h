@@ -51,6 +51,9 @@ void keyboard_state_activate(void);
 // Deactivate keyboard ISR / stop listening keyboard interrupt
 void keyboard_state_deactivate(void);
 
+// clear keyboard buffer
+void clear_keyboard_buffer(void);
+
 // Get keyboard buffer values - @param buf Pointer to char buffer, recommended size at least KEYBOARD_BUFFER_SIZE
 void get_keyboard_buffer(char *buf);
 

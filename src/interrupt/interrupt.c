@@ -163,8 +163,8 @@ void syscall(struct CPURegister cpu, __attribute__((unused)) struct InterruptSta
         *((int8_t*) cpu.ecx) = delete(request);
     }             
     else if (cpu.eax == 4) {
+        clear_keyboard_buffer();
         keyboard_state_activate();
-        
         __asm__("sti"); // Due IRQ is disabled when main_interrupt_handler() called
         while (is_keyboard_blocking());
         char buf[KEYBOARD_BUFFER_SIZE];
@@ -173,5 +173,49 @@ void syscall(struct CPURegister cpu, __attribute__((unused)) struct InterruptSta
     } 
     else if (cpu.eax == 5) {
         puts((char *) cpu.ebx, cpu.ecx, cpu.edx); // Modified puts() on kernel side 
+    } 
+    else if (cpu.eax == 6) { 
+        memset((char *) cpu.ebx, 0, cpu.ecx);
+    }     
+    else if (cpu.eax == 7) {
+        const char* cmd = (char *) cpu.ebx;        
+        while(isspace((unsigned char)*cmd)) {
+            cmd++;
+        }
+
+        if (memcmp((char *) cmd, "cd", 2) == 0) {
+            *((int8_t*) cpu.ecx) = 0;
+        }
+        else if (memcmp((char *) cpu.ebx, "ls", 2) == 0) {
+            *((int8_t*) cpu.ecx) = 1;
+        }    
+        else if (memcmp((char *) cpu.ebx, "mkdir", 5) == 0) {
+            *((int8_t*) cpu.ecx) = 2;
+        }    
+        else if (memcmp((char *) cpu.ebx, "cat", 3) == 0) {
+            *((int8_t*) cpu.ecx) = 3;
+        }    
+        else if (memcmp((char *) cpu.ebx, "cp", 2) == 0) {
+            *((int8_t*) cpu.ecx) = 4;
+        }  
+        else if (memcmp((char *) cpu.ebx, "rm", 2) == 0) {
+            *((int8_t*) cpu.ecx) = 5;
+        }                                    
+        else if (memcmp((char *) cpu.ebx, "mv", 2) == 0) {
+            *((int8_t*) cpu.ecx) = 6;
+        }              
+        else if (memcmp((char *) cpu.ebx, "whereis", 7) == 0) {
+            *((int8_t*) cpu.ecx) = 7;
+        } else {
+            *((int8_t*) cpu.ecx) = 8;
+        }
+    }
+
+    else if (cpu.eax == 8) {
+        read_clusters(&*(struct FAT32DirectoryTable*) cpu.ebx, cpu.ecx, 1);
+    }
+    
+    else if (cpu.eax == 9) {
+        *((int8_t*) cpu.ecx) = memcmp((char *) cpu.ebx, (char *) cpu.edx, sizeof(cpu.ebx));
     }
 }
