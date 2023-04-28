@@ -44,6 +44,7 @@ kernel:
 	@$(CC) $(CFLAGS) $(SOURCE_FOLDER)/filesystem/disk.c -o $(OUTPUT_FOLDER)/disk.o
 
 	@$(CC) $(CFLAGS) $(SOURCE_FOLDER)/paging/paging.c -o $(OUTPUT_FOLDER)/paging.o
+	# @$(CC) $(CFLAGS) $(SOURCE_FOLDER)/command/command.c -o $(OUTPUT_FOLDER)/command.o
 
 	@$(LIN) $(LFLAGS) bin/*.o -o $(OUTPUT_FOLDER)/kernel
 
@@ -85,6 +86,9 @@ user-shell:
 	@$(LIN) -T $(SOURCE_FOLDER)/user-linker.ld -melf_i386 \
 		user-entry.o user-shell.o -o $(OUTPUT_FOLDER)/shell
 	@echo Linking object shell object files and generate flat binary...
+	@$(LIN) -T $(SOURCE_FOLDER)/user-linker.ld -melf_i386 --oformat=elf32-i386\
+		user-entry.o user-shell.o -o $(OUTPUT_FOLDER)/shell_elf
+	@echo Linking object shell object files and generate ELF32 for debugging...
 	@size --target=binary bin/shell
 	@rm -f *.o
 
