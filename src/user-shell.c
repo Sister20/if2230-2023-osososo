@@ -377,10 +377,10 @@ void rm_cmd(struct FAT32DirectoryTable *current_dir, char *filename) {
             tempName[jj] = current_dir->table[i].ext[j];
             jj++;
         }
-        syscall(5, (uint32_t) tempName, stringLength(tempName), 0xF);
-        syscall(5, (uint32_t) "\n", stringLength("\n"), 0xF);
+        // syscall(5, (uint32_t) tempName, stringLength(tempName), 0xF);
+        // syscall(5, (uint32_t) "\n", stringLength("\n"), 0xF);
         if (stringCompare(tempName, filename) == 0) {
-            syscall(5, (uint32_t) "masukk\n", stringLength("masukk\n"), 0xF);
+            // syscall(5, (uint32_t) "masukk\n", stringLength("masukk\n"), 0xF);
             uint8_t cl[current_dir->table[i].filesize];
             struct FAT32DriverRequest request2 = {
                 .buf                   = &cl,
@@ -401,6 +401,7 @@ void rm_cmd(struct FAT32DirectoryTable *current_dir, char *filename) {
                 if (retcode == 1) {
                     syscall(5, (uint32_t) "rm: file not found\n", stringLength("rm: file not found\n"), 0xF);
                 }
+                syscall(5, (uint32_t) "rm: file has been deleted\n", stringLength("rm: file has been deleted\n"), 0xF);
                 return;
             }
         }
@@ -469,7 +470,7 @@ void mv_cmd(struct FAT32DirectoryTable *current_dir, char *source, char *dest) {
             // syscall(10, (uint32_t)&requestDest.buf, (uint32_t)&requestSource.buf, (uint32_t)&requestSource.buffer_size);
             // if source is a file
             if(retcode == 0) {
-                syscall(5, (uint32_t) "masukk\n", 7, 0xF);
+                // syscall(5, (uint32_t) "masukk\n", 7, 0xF);
                 char namaTujuan[8] ;
                 char extTujuan[3];
 
@@ -506,7 +507,7 @@ void mv_cmd(struct FAT32DirectoryTable *current_dir, char *source, char *dest) {
                     }
                 }
 
-                syscall(5, (uint32_t) "disninii\n", 7, 0xF);
+                // syscall(5, (uint32_t) "disninii\n", 7, 0xF);
 
 
 
@@ -538,7 +539,7 @@ void mv_cmd(struct FAT32DirectoryTable *current_dir, char *source, char *dest) {
 
                     // if dest is directory
                     if (retcode==0){
-                        syscall(5, (uint32_t) "masukf\n", 7, 0xF);
+                        // syscall(5, (uint32_t) "masukf\n", 7, 0xF);
                         const char* str_path = dest;  
                         struct FAT32DirectoryTable new_dir;
                         uint32_t parent_cluster = (current_dir->table[0].cluster_high << 16) | current_dir->table[0].cluster_low;
