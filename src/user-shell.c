@@ -11,7 +11,19 @@ void syscall(uint32_t eax, uint32_t ebx, uint32_t ecx, uint32_t edx) {
     //        so it need to be the last one to mov
     __asm__ volatile("int $0x30");
 }
-
+int stringCompare(const char *str1, const char *str2) {
+    int i = 0;
+    while (str1[i] != '\0' && str2[i] != '\0') {
+        if (str1[i] != str2[i]) {
+            return 1;
+        }
+        i++;
+    }
+    if (str1[i] != '\0' || str2[i] != '\0') {
+        return 1;
+    }
+    return 0;
+}
 void concatStrings(char *dest, const char *src) {
     int i = 0;
     while (dest[i] != '\0') {
@@ -98,6 +110,45 @@ void ls_cmd(struct FAT32DirectoryTable *current_dir) {
     }
 }
 
+
+
+void cat_cmd(struct FAT32DirectoryTable *current_dir, char *filename) {
+    struct ClusterBuffer cl           = {0};
+    uint16_t retcode = 1;
+    uint16_t i = 0;
+    uint32_t parent_cluster = (current_dir->table[0].cluster_high << 16) | current_dir->table[0].cluster_low;
+    syscall(9, (uint32_t) &current_dir->table[i].name, (uint32_t) &retcode, (uint32_t) "\0\0\0");
+    while (retcode != 0) {
+        
+        if (stringCompare(current_dir->table[i].name, filename) == 0) {
+    
+            struct FAT32DriverRequest request2 = {
+                .buf                   = &cl,
+                .name                  = {0},
+                .ext                   = {0},
+                .parent_cluster_number = parent_cluster,
+                .buffer_size           = CLUSTER_SIZE,
+            };
+            for(int j = 0; j < 11; j++) {
+                request2.name[j] = current_dir->table[i].name[j];
+            }
+            for(int j = 0; j < 3; j++) {
+                request2.ext[j] = current_dir->table[i].ext[j];
+            }
+            syscall(0, (uint32_t) &request2, (uint32_t) &retcode, 0);
+            if(retcode == 0) {
+                syscall(5, (uint32_t) request2.buf, stringLength(request2.buf), 0xF);
+                syscall(5, (uint32_t) "\n",1, 0xF);
+                return;
+            }
+            
+        }
+        i++;
+        syscall(9, (uint32_t) &current_dir->table[i].name, (uint32_t) &retcode, (uint32_t) "\0\0\0");
+    }
+    syscall(5, (uint32_t) "File not found\n", 15, 0xF);
+}
+
 void mkdir_cmd(char *input, struct FAT32DirectoryTable *current_dir) {
     struct ClusterBuffer cl           = {0};
     uint8_t retcode = 0;
@@ -155,7 +206,10 @@ int main(void) {
         else if (retcode == 2) {
             mkdir_cmd(args[1], &current_dir);
         }        
-
+        else if(retcode==3){
+            cat_cmd(&current_dir, args[1]);
+        }
+        
         else if (retcode == 8) {
            syscall(5, (uint32_t) buf, stringLength(buf), 0xF); 
            syscall(5, (uint32_t) ": command not found\n", stringLength(": command not found\n"), 0xF);
