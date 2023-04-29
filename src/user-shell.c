@@ -134,8 +134,12 @@ void cat_cmd(struct FAT32DirectoryTable *current_dir, char *filename) {
             jj++;
         }
         jj++;
+        int tanda=1;
         for(int j = 0; j < 3; j++) {
-            if(current_dir->table[i].ext[j] != '\0') tempName[jj-1]='.';
+            if(current_dir->table[i].ext[j] != '\0' && tanda==1){
+                tempName[jj-1]='.';
+                tanda=0;  
+            } 
             tempName[jj] = current_dir->table[i].ext[j];
             jj++;
         }
@@ -183,9 +187,13 @@ void cp_cmd(struct FAT32DirectoryTable *current_dir, char *asal,char *tujuan) {
             tempName[jj] = current_dir->table[i].name[jj];
             jj++;
         }
-        tempName[jj]='.';
         jj++;
+        int tanda=1;
         for(int j = 0; j < 3; j++) {
+            if(current_dir->table[i].ext[j] != '\0' && tanda==1){
+                tempName[jj-1]='.';
+                tanda=0;  
+            } 
             tempName[jj] = current_dir->table[i].ext[j];
             jj++;
         }
@@ -360,12 +368,19 @@ void rm_cmd(struct FAT32DirectoryTable *current_dir, char *filename) {
             jj++;
         }
         jj++;
+        int tanda=1;
         for(int j = 0; j < 3; j++) {
-            if(current_dir->table[i].ext[j] != '\0') tempName[jj-1]='.';
+            if(current_dir->table[i].ext[j] != '\0' && tanda==1){
+                tempName[jj-1]='.';
+                tanda=0;  
+            } 
             tempName[jj] = current_dir->table[i].ext[j];
             jj++;
         }
+        syscall(5, (uint32_t) tempName, stringLength(tempName), 0xF);
+        syscall(5, (uint32_t) "\n", stringLength("\n"), 0xF);
         if (stringCompare(tempName, filename) == 0) {
+            syscall(5, (uint32_t) "masukk\n", stringLength("masukk\n"), 0xF);
             uint8_t cl[current_dir->table[i].filesize];
             struct FAT32DriverRequest request2 = {
                 .buf                   = &cl,
@@ -407,9 +422,13 @@ void mv_cmd(struct FAT32DirectoryTable *current_dir, char *source, char *dest) {
             tempName[jj] = current_dir->table[i].name[jj];
             jj++;
         }
-        tempName[jj]='.';
         jj++;
+        int tanda=1;
         for(int j = 0; j < 3; j++) {
+            if(current_dir->table[i].ext[j] != '\0' && tanda==1){
+                tempName[jj-1]='.';
+                tanda=0;  
+            } 
             tempName[jj] = current_dir->table[i].ext[j];
             jj++;
         }
