@@ -104,6 +104,10 @@ void ls_cmd(struct FAT32DirectoryTable *current_dir) {
     syscall(9, (uint32_t) &current_dir->table[i].name, (uint32_t) &retcode, (uint32_t) "\0\0\0");
     while (retcode != 0) {
         syscall(5, (uint32_t) current_dir->table[i].name, stringLength(current_dir->table[i].name), 0xF);
+        if (current_dir->table[i].ext[0] != '\0') {
+            syscall(5, (uint32_t) '.', 1, 0xA);
+            syscall(5, (uint32_t) current_dir->table[i].ext, 3, 0xA);
+        }
         syscall(5, (uint32_t) "\n", 1, 0xA);
         
         i++;
@@ -324,8 +328,7 @@ int main(void) {
         }
         else if(retcode==4){
             cp_cmd(&current_dir, args[1], args[2]);
-        }
-        
+        }        
         else if (retcode == 8) {
            syscall(5, (uint32_t) buf, stringLength(buf), 0xF); 
            syscall(5, (uint32_t) ": command not found\n", stringLength(": command not found\n"), 0xF);
