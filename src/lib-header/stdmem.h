@@ -53,4 +53,6 @@ void *memmove(void *dest, const void *src, size_t n);
 
 int isspace(char c);
 
+int stringLength(const char *str);
+
 #endif

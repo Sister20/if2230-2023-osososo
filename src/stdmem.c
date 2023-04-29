@@ -46,3 +46,11 @@ void *memmove(void *dest, const void *src, size_t n) {
 int isspace(char c) {
     return c == ' ';
 }
+
+int stringLength(const char *str) {
+    int i = 0;
+    while (str[i] != '\0') {
+        i++;
+    }
+    return i;
+}

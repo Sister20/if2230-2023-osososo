@@ -281,10 +281,106 @@ void cd_cmd(char *input, void *restrict path, uint16_t *count, struct FAT32Direc
     }
 }
 
+void rm_cmd(struct FAT32DirectoryTable *current_dir, char *filename) {
+    struct ClusterBuffer cl = {0};
+    uint16_t retcode = 1;
+    uint16_t i = 0;
+    uint32_t parent_cluster = (current_dir->table[0].cluster_high << 16) | current_dir->table[0].cluster_low;
+    syscall(9, (uint32_t) &current_dir->table[i].name, (uint32_t) &retcode, (uint32_t) "\0\0\0");
+    while (retcode != 0) {
+        
+        if (stringCompare(current_dir->table[i].name, filename) == 0) {
+    
+            struct FAT32DriverRequest request2 = {
+                .buf                   = &cl,
+                .name                  = {0},
+                .ext                   = {0},
+                .parent_cluster_number = parent_cluster,
+                .buffer_size           = CLUSTER_SIZE,
+            };
+            for(int j = 0; j < 11; j++) {
+                request2.name[j] = current_dir->table[i].name[j];
+            }
+            for(int j = 0; j < 3; j++) {
+                request2.ext[j] = current_dir->table[i].ext[j];
+            }
+            syscall(0, (uint32_t) &request2, (uint32_t) &retcode, 0);
+            if(retcode == 0) {
+                syscall(3, (uint32_t) &request2, (uint32_t) &retcode, 0);
+                if (retcode == 1) {
+                    syscall(5, (uint32_t) "rm: file not found\n", stringLength("rm: file not found\n"), 0xF);
+                }
+                return;
+            }
+            
+        }
+        i++;
+        syscall(9, (uint32_t) &current_dir->table[i].name, (uint32_t) &retcode, (uint32_t) "\0\0\0");
+    }
+    syscall(5, (uint32_t) "File not found\n", 15, 0xF);
+}
+
+void mv_cmd(struct FAT32DirectoryTable *current_dir, char *source, char *dest) {
+    struct ClusterBuffer cl           = {0};
+    uint16_t retcode = 1;
+    uint16_t i = 0;
+    uint32_t parent_cluster = (current_dir->table[0].cluster_high << 16) | current_dir->table[0].cluster_low;
+    syscall(9, (uint32_t) &current_dir->table[i].name, (uint32_t) &retcode, (uint32_t) "\0\0\0");
+    while (retcode != 0) {
+        
+        if (stringCompare(current_dir->table[i].name, source) == 0) {
+    
+            struct FAT32DriverRequest requestSource = {
+                .buf                   = &cl,
+                .name                  = {0},
+                .ext                   = {0},
+                .parent_cluster_number = parent_cluster,
+                .buffer_size           = CLUSTER_SIZE,
+            };
+            for(int j = 0; j < 11; j++) {
+                requestSource.name[j] = current_dir->table[i].name[j];
+            }
+            for(int j = 0; j < 3; j++) {
+                requestSource.ext[j] = current_dir->table[i].ext[j];
+            }
+            syscall(0, (uint32_t) &requestSource, (uint32_t) &retcode, 0);
+            if(retcode == 0) {
+                struct FAT32DriverRequest requestDest = {
+                    .buf                   = &cl,
+                    .name                  = {0},
+                    .ext                   = {0},
+                    .parent_cluster_number = parent_cluster,
+                    .buffer_size           = CLUSTER_SIZE,
+                };
+                for(int j = 0; j < 11; j++) {
+                    requestDest.name[j] = dest[j];
+                }
+                for(int j = 0; j < 3; j++) {
+                    requestDest.ext[j] = current_dir->table[i].ext[j];
+                }
+                syscall(0, (uint32_t) &requestDest, (uint32_t) &retcode, 0);
+                if (retcode==0){ // if destination is a file
+                    syscall(2, (uint32_t) &requestDest, (uint32_t) &retcode, 0); // write new file 
+                    uint16_t trash;
+                    syscall(3, (uint32_t) &requestSource, (uint32_t) &trash, 0); // delete source file
+                } else if (retcode==1){
+                    // read directory
+                }
+                return;
+            }
+            
+        }
+        i++;
+        syscall(9, (uint32_t) &current_dir->table[i].name, (uint32_t) &retcode, (uint32_t) "\0\0\0");
+    }
+    syscall(5, (uint32_t) "File not found\n", 15, 0xF);
+}
+
 
 int main(void) {
     int32_t retcode;
     char args[MAX_ARGS][MAX_ARG_LEN];
+    uint8_t argcount = 0;
     // int arg_count;    
     struct FAT32DirectoryTable current_dir = {0};
     // struct FAT32DriverRequest request = {
@@ -310,25 +406,38 @@ int main(void) {
         syscall(4, (uint32_t) buf, 16, 0);
         
         // Parsing command from user input
-        parse_input(buf, args);
+        argcount = parse_input(buf, args);
         syscall(7, (uint32_t) args[0], (uint32_t) &retcode, 0); 
 
         // checking return code and calling the right syscall
         if (retcode == 0) {
-            cd_cmd(args[1], &path_cluster, &n_path, &current_dir);
+            if (argcount > 2) syscall(5, (uint32_t) "cd: too many arguments\n", stringLength("cd: too many arguments\n"), 0xF);
+            else cd_cmd(args[1], &path_cluster, &n_path, &current_dir);
         } 
         else if (retcode == 1) {
-            ls_cmd(&current_dir);
+            if (argcount > 1) syscall(5, (uint32_t) "ls: too many arguments\n", stringLength("ls: too many arguments\n"), 0xF);            
+            else ls_cmd(&current_dir);
         }
         else if (retcode == 2) {
-            mkdir_cmd(args[1], &current_dir);
+            if (argcount > 2) syscall(5, (uint32_t) "mkdir: too many arguments\n", stringLength("mkdir: too many arguments\n"), 0xF);
+            else mkdir_cmd(args[1], &current_dir);
         }        
         else if(retcode==3){
-            cat_cmd(&current_dir, args[1]);
+            if (argcount > 2) syscall(5, (uint32_t) "cat: too many arguments\n", stringLength("cat: too many arguments\n"), 0xF);
+            else cat_cmd(&current_dir, args[1]);
         }
         else if(retcode==4){
-            cp_cmd(&current_dir, args[1], args[2]);
-        }        
+            if (argcount > 3) syscall(5, (uint32_t) "cp: too many arguments\n", stringLength("cp: too many arguments\n"), 0xF);
+            else cp_cmd(&current_dir, args[1], args[2]);
+        }
+        else if (retcode==5){
+            if (argcount > 2) syscall(5, (uint32_t) "rm: too many arguments\n", stringLength("rm: too many arguments\n"), 0xF);
+            else rm_cmd(&current_dir, args[1]);
+        }
+        else if (retcode==6) {
+            if (argcount > 3) syscall(5, (uint32_t) "mv: too many arguments\n", stringLength("mv: too many arguments\n"), 0xF);
+            else mv_cmd(&current_dir, args[1], args[2]);
+        }
         else if (retcode == 8) {
            syscall(5, (uint32_t) buf, stringLength(buf), 0xF); 
            syscall(5, (uint32_t) ": command not found\n", stringLength(": command not found\n"), 0xF);
