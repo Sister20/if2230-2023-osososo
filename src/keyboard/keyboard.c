@@ -147,6 +147,7 @@ void keyboard_isr(void){
                             if (keyboard_state.buffer_index > 0) {
                                 tracker--;
                                 keyboard_state.buffer_index--;
+                                keyboard_state.keyboard_buffer[keyboard_state.buffer_index] = 0;
                             }
                                      
                             

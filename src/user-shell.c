@@ -99,14 +99,20 @@ void ls_cmd(struct FAT32DirectoryTable *current_dir) {
     uint16_t retcode = 1;
     
     uint16_t i = 1;
+    uint16_t color = 0xF;
     syscall(9, (uint32_t) &current_dir->table[i].name, (uint32_t) &retcode, (uint32_t) "\0\0\0");
+    
     while (retcode != 0) {
-        syscall(5, (uint32_t) current_dir->table[i].name, stringLength(current_dir->table[i].name), 0xF);
+        if (current_dir->table[i].attribute == 0) color = 0x9;
+        else color = 0xF;
+
+        syscall(5, (uint32_t) current_dir->table[i].name, stringLength(current_dir->table[i].name), color);
+        
         if (current_dir->table[i].ext[0] != '\0') {
-            syscall(5, (uint32_t) '.', 1, 0xA);
-            syscall(5, (uint32_t) current_dir->table[i].ext, 3, 0xA);
+            syscall(5, (uint32_t) ".", 1, color);
+            syscall(5, (uint32_t) current_dir->table[i].ext, 3, color);
         }
-        syscall(5, (uint32_t) "\n", 1, 0xA);
+        syscall(5, (uint32_t) "\n", 1, color);
         
         i++;
         syscall(9, (uint32_t) &current_dir->table[i].name, (uint32_t) &retcode, (uint32_t) "\0\0\0");
@@ -249,7 +255,7 @@ void mkdir_cmd(char *input, struct FAT32DirectoryTable *current_dir) {
     syscall(9, (uint32_t) input, (uint32_t) &retcode, (uint32_t) "\0\0\0");
     
     if (retcode == 0) {
-        syscall(5, (uint32_t) "mkdir: missing operand\n", stringLength("mkdir: missing operand\n"), 0xF);;
+        syscall(5, (uint32_t) "mkdir: missing operand\n", stringLength("mkdir: missing operand\n"), 0xF);
     } else {
         struct ClusterBuffer cl           = {0};
         
@@ -263,6 +269,7 @@ void mkdir_cmd(char *input, struct FAT32DirectoryTable *current_dir) {
         };
         for (uint8_t i = 0; i < 8; i++) request.name[i] = input[i];
         syscall(2, (uint32_t) &request, (uint32_t) &retcode, 0);
+        if (retcode == 1) syscall(5, (uint32_t) "mkdir: directory already exists\n", stringLength("mkdir: directory already exists\n"), 0xF);
     }
 }
 
