@@ -219,4 +219,7 @@ void syscall(struct CPURegister cpu, __attribute__((unused)) struct InterruptSta
     else if (cpu.eax == 9) {
         *((int8_t*) cpu.ecx) = memcmp((char *) cpu.ebx, (char *) cpu.edx, sizeof(cpu.ebx));
     }
+    else if (cpu.eax == 10) {
+        memcpy((uint32_t*) cpu.ebx, (uint32_t*)cpu.ecx, cpu.edx);
+    }
 }
