@@ -184,28 +184,28 @@ void syscall(struct CPURegister cpu, __attribute__((unused)) struct InterruptSta
             cmd++;
         }
 
-        if (memcmp((char *) cmd, "cd", 2) == 0) {
+        if (memcmp((char *) cmd, "cd", stringLength(cmd)) == 0) {
             *((int8_t*) cpu.ecx) = 0;
         }
-        else if (memcmp((char *) cpu.ebx, "ls", 2) == 0) {
+        else if (memcmp((char *) cmd, "ls", stringLength(cmd)) == 0) {
             *((int8_t*) cpu.ecx) = 1;
         }    
-        else if (memcmp((char *) cpu.ebx, "mkdir", 5) == 0) {
+        else if (memcmp((char *) cmd, "mkdir", stringLength(cmd)) == 0) {
             *((int8_t*) cpu.ecx) = 2;
         }    
-        else if (memcmp((char *) cpu.ebx, "cat", 3) == 0) {
+        else if (memcmp((char *) cmd, "cat", stringLength(cmd)) == 0) {
             *((int8_t*) cpu.ecx) = 3;
         }    
-        else if (memcmp((char *) cpu.ebx, "cp", 2) == 0) {
+        else if (memcmp((char *) cmd, "cp", stringLength(cmd)) == 0) {
             *((int8_t*) cpu.ecx) = 4;
         }  
-        else if (memcmp((char *) cpu.ebx, "rm", 2) == 0) {
+        else if (memcmp((char *) cmd, "rm", stringLength(cmd)) == 0) {
             *((int8_t*) cpu.ecx) = 5;
         }                                    
-        else if (memcmp((char *) cpu.ebx, "mv", 2) == 0) {
+        else if (memcmp((char *) cmd, "mv", stringLength(cmd)) == 0) {
             *((int8_t*) cpu.ecx) = 6;
         }              
-        else if (memcmp((char *) cpu.ebx, "whereis", 7) == 0) {
+        else if (memcmp((char *) cmd, "whereis", stringLength(cmd)) == 0) {
             *((int8_t*) cpu.ecx) = 7;
         } else {
             *((int8_t*) cpu.ecx) = 8;

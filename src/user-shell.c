@@ -102,6 +102,10 @@ void ls_cmd(struct FAT32DirectoryTable *current_dir) {
     syscall(9, (uint32_t) &current_dir->table[i].name, (uint32_t) &retcode, (uint32_t) "\0\0\0");
     while (retcode != 0) {
         syscall(5, (uint32_t) current_dir->table[i].name, stringLength(current_dir->table[i].name), 0xF);
+        if (current_dir->table[i].ext[0] != '\0') {
+            syscall(5, (uint32_t) '.', 1, 0xA);
+            syscall(5, (uint32_t) current_dir->table[i].ext, 3, 0xA);
+        }
         syscall(5, (uint32_t) "\n", 1, 0xA);
         
         i++;
@@ -436,9 +440,11 @@ void mv_cmd(struct FAT32DirectoryTable *current_dir, char *source, char *dest) {
     syscall(5, (uint32_t) "File not found\n", 15, 0xF);
 }
 
+
 int main(void) {
     int32_t retcode;
     char args[MAX_ARGS][MAX_ARG_LEN];
+    uint8_t argcount = 0;
     // int arg_count;    
     struct FAT32DirectoryTable current_dir = {0};
     // struct FAT32DriverRequest request = {
@@ -464,30 +470,37 @@ int main(void) {
         syscall(4, (uint32_t) buf, 16, 0);
         
         // Parsing command from user input
-        parse_input(buf, args);
+        argcount = parse_input(buf, args);
         syscall(7, (uint32_t) args[0], (uint32_t) &retcode, 0); 
 
         // checking return code and calling the right syscall
         if (retcode == 0) {
-            cd_cmd(args[1], &path_cluster, &n_path, &current_dir);
+            if (argcount > 2) syscall(5, (uint32_t) "cd: too many arguments\n", stringLength("cd: too many arguments\n"), 0xF);
+            else cd_cmd(args[1], &path_cluster, &n_path, &current_dir);
         } 
         else if (retcode == 1) {
-            ls_cmd(&current_dir);
+            if (argcount > 1) syscall(5, (uint32_t) "ls: too many arguments\n", stringLength("ls: too many arguments\n"), 0xF);            
+            else ls_cmd(&current_dir);
         }
         else if (retcode == 2) {
-            mkdir_cmd(args[1], &current_dir);
+            if (argcount > 2) syscall(5, (uint32_t) "mkdir: too many arguments\n", stringLength("mkdir: too many arguments\n"), 0xF);
+            else mkdir_cmd(args[1], &current_dir);
         }        
         else if(retcode==3){
-            cat_cmd(&current_dir, args[1]);
+            if (argcount > 2) syscall(5, (uint32_t) "cat: too many arguments\n", stringLength("cat: too many arguments\n"), 0xF);
+            else cat_cmd(&current_dir, args[1]);
         }
         else if(retcode==4){
-            cp_cmd(&current_dir, args[1], args[2]);
+            if (argcount > 3) syscall(5, (uint32_t) "cp: too many arguments\n", stringLength("cp: too many arguments\n"), 0xF);
+            else cp_cmd(&current_dir, args[1], args[2]);
         }
         else if (retcode==5){
-            rm_cmd(&current_dir, args[1]);
+            if (argcount > 2) syscall(5, (uint32_t) "rm: too many arguments\n", stringLength("rm: too many arguments\n"), 0xF);
+            else rm_cmd(&current_dir, args[1]);
         }
         else if (retcode==6) {
-            mv_cmd(&current_dir, args[1], args[2]);
+            if (argcount > 3) syscall(5, (uint32_t) "mv: too many arguments\n", stringLength("mv: too many arguments\n"), 0xF);
+            else mv_cmd(&current_dir, args[1], args[2]);
         }
         else if(retcode==7){
             struct FAT32DriverRequest request2 = {
