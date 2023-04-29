@@ -353,8 +353,19 @@ void rm_cmd(struct FAT32DirectoryTable *current_dir, char *filename) {
     uint32_t parent_cluster = (current_dir->table[0].cluster_high << 16) | current_dir->table[0].cluster_low;
     syscall(9, (uint32_t) &current_dir->table[i].name, (uint32_t) &retcode, (uint32_t) "\0\0\0");
     while (retcode != 0) {
-        
-        if (stringCompare(current_dir->table[i].name, filename) == 0) {
+        char tempName[12] = {0};
+        int jj=0;
+        while(current_dir->table[i].name[jj] != '\0') {
+            tempName[jj] = current_dir->table[i].name[jj];
+            jj++;
+        }
+        jj++;
+        for(int j = 0; j < 3; j++) {
+            if(current_dir->table[i].ext[j] != '\0') tempName[jj-1]='.';
+            tempName[jj] = current_dir->table[i].ext[j];
+            jj++;
+        }
+        if (stringCompare(tempName, filename) == 0) {
             uint8_t cl[current_dir->table[i].filesize];
             struct FAT32DriverRequest request2 = {
                 .buf                   = &cl,
@@ -363,7 +374,7 @@ void rm_cmd(struct FAT32DirectoryTable *current_dir, char *filename) {
                 .parent_cluster_number = parent_cluster,
                 .buffer_size           = current_dir->table[i].filesize,
             };
-            for(int j = 0; j < 11; j++) {
+            for(int j = 0; j < 8; j++) {
                 request2.name[j] = current_dir->table[i].name[j];
             }
             for(int j = 0; j < 3; j++) {
@@ -436,7 +447,7 @@ void mv_cmd(struct FAT32DirectoryTable *current_dir, char *source, char *dest) {
             };
 
             // memcpy(requestDest.buf, requestSource.buf, requestSource.buffer_size);
-            syscall(10, (uint32_t)&requestDest.buf, (uint32_t)&requestSource.buf, (uint32_t)&requestSource.buffer_size);
+            // syscall(10, (uint32_t)&requestDest.buf, (uint32_t)&requestSource.buf, (uint32_t)&requestSource.buffer_size);
             // if source is a file
             if(retcode == 0) {
                 syscall(5, (uint32_t) "masukk\n", 7, 0xF);
@@ -489,22 +500,18 @@ void mv_cmd(struct FAT32DirectoryTable *current_dir, char *source, char *dest) {
                 syscall(0, (uint32_t) &requestDest, (uint32_t) &retcode, 0);
                 
                 
-                // if dest is a file (direwrite)
-                if (retcode==0){ 
+                // if dest is a file (direwrite) or not found
+                if (retcode==0 || retcode==3){ 
                     syscall(3, (uint32_t) &requestSource, (uint32_t) &retcode, 0); // delete source file
-                    syscall(5, (uint32_t) "masukb\n", 7, 0xF);
-                    syscall(5, (uint32_t) requestDest.name, stringLength(requestDest.name), 0xF);
-                    syscall(5, (uint32_t) requestDest.ext, stringLength(requestDest.ext), 0xF);
+                    // syscall(5, (uint32_t) "masukb\n", 7, 0xF);
                     // syscall(5, (uint32_t) requestDest.name, stringLength(requestDest.name), 0xF);
+                    // syscall(5, (uint32_t) requestDest.ext, stringLength(requestDest.ext), 0xF);
+                    // syscall(5, (uint32_t) requestDest.name, stringLength(requestDest.name), 0xF);
+                    if (retcode==0){
+                        syscall(3, (uint32_t) &requestDest, (uint32_t) &retcode, 0); // delete source file
+                    }
                     syscall(2, (uint32_t) &requestDest, (uint32_t) &retcode, 0); // write new file
                      
-                // if dest not found
-                } else if (retcode==3){
-                    if (adaTitik){
-                        syscall(3, (uint32_t) &requestSource, (uint32_t) &retcode, 0); // delete source file
-                        syscall(2, (uint32_t) &requestDest, (uint32_t) &retcode, 0); // write new file 
-                    }
-
                 // if dest is a folder (di masukin ke folder)
                 } else {
 
