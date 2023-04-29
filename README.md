@@ -19,8 +19,6 @@
 
 ## Screenshots
 
-![image](https://user-images.githubusercontent.com/73151449/166110062-b8515469-083e-41d9-be93-c1f1424de759.png)
-![image](https://user-images.githubusercontent.com/73151449/166110079-6800f7ec-8e67-4481-9ed5-25d2f5db3d8c.png)
 
 ## Technologies Used
 
