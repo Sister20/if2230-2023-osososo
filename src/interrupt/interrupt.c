@@ -63,6 +63,7 @@ void main_interrupt_handler(
     {
         case PAGE_FAULT:
             __asm__("hlt"); 
+            break;
         case PIC1_OFFSET + IRQ_TIMER:
 
             break;

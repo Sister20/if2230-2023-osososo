@@ -81,7 +81,7 @@ void printPath(void *restrict path, uint16_t count, struct FAT32DirectoryTable *
         syscall(8, (uint32_t) current_dir, (uint32_t) *((uint16_t*)path + i), 0);
         syscall(5, (uint32_t) current_dir->table[0].name, stringLength(current_dir->table[0].name), 0xA);
     }
-    syscall(5, (uint32_t) ":/$ ", 4, 0xD);    
+    syscall(5, (uint32_t) ":/$ ", 4, 0xD);
 }
 
 void ls_cmd(struct FAT32DirectoryTable *current_dir) {
@@ -99,18 +99,50 @@ void ls_cmd(struct FAT32DirectoryTable *current_dir) {
 }
 
 void mkdir_cmd(char *input, struct FAT32DirectoryTable *current_dir) {
-    struct ClusterBuffer cl           = {0};
     uint8_t retcode = 0;
-    uint32_t parent_cluster = (current_dir->table[0].cluster_high << 16) | current_dir->table[0].cluster_low;
-    struct FAT32DriverRequest request = {
-        .buf                   = &cl,
-        .name                  = {0},
-        .ext                   = "\0\0\0",
-        .parent_cluster_number = parent_cluster,
-        .buffer_size           = CLUSTER_SIZE,
-    };
-    for (uint8_t i = 0; i < 8; i++) request.name[i] = input[i];
-    syscall(2, (uint32_t) &request, (uint32_t) &retcode, 0);
+    syscall(9, (uint32_t) input, (uint32_t) &retcode, (uint32_t) "\0\0\0");
+    
+    if (retcode == 0) {
+        syscall(5, (uint32_t) "mkdir: missing operand\n", stringLength("mkdir: missing operand\n"), 0xF);;
+    } else {
+        struct ClusterBuffer cl           = {0};
+        
+        uint32_t parent_cluster = (current_dir->table[0].cluster_high << 16) | current_dir->table[0].cluster_low;
+        struct FAT32DriverRequest request = {
+            .buf                   = &cl,
+            .name                  = {0},
+            .ext                   = "\0\0\0",
+            .parent_cluster_number = parent_cluster,
+            .buffer_size           = CLUSTER_SIZE,
+        };
+        for (uint8_t i = 0; i < 8; i++) request.name[i] = input[i];
+        syscall(2, (uint32_t) &request, (uint32_t) &retcode, 0);
+    }
+}
+
+void cd_cmd(char *input, void *restrict path, uint16_t *count, struct FAT32DirectoryTable *current_dir) {
+    uint8_t retcode = 0;
+        
+    syscall(9, (uint32_t) input, (uint32_t) &retcode, (uint32_t) "/");
+        
+    if ( retcode == 0 ) {
+
+    } else {
+        path = path;
+        count = count;
+        struct FAT32DirectoryTable new_dir;
+        uint32_t parent_cluster = (current_dir->table[0].cluster_high << 16) | current_dir->table[0].cluster_low;
+        struct FAT32DriverRequest request = {
+            .buf                   = &new_dir,
+            .name                  = {0},
+            .ext                   = "\0\0\0",
+            .parent_cluster_number = parent_cluster,
+            .buffer_size           = CLUSTER_SIZE,
+        };        
+        for (uint8_t i = 0; i < 8; i++) request.name[i] = input[i];
+        syscall(1, (uint32_t) &request, (uint32_t) &retcode, 0);
+    }
+
 }
 
 
@@ -147,7 +179,7 @@ int main(void) {
 
         // checking return code and calling the right syscall
         if (retcode == 0) {
-           syscall(5, (uint32_t) "xxx\n", 4, 0xF);
+           cd_cmd(args[1], &path_cluster, &n_path, &current_dir);
         } 
         else if (retcode == 1) {
             ls_cmd(&current_dir);
