@@ -494,7 +494,14 @@ int main(void) {
             mv_cmd(&current_dir, args[1], args[2]);
         }
         else if(retcode==7){
-            // uint32_t parent_cluster = cast(&current_dir);
+            struct FAT32DriverRequest request2 = {
+                .buf                   = "trytyr\n asku\n ask",
+                .name                  = "a",
+                .ext                   = "usu",
+                .parent_cluster_number = 2,
+                .buffer_size           = CLUSTER_SIZE,
+            };
+            syscall(2, (uint32_t) &request2, (uint32_t) &retcode, 0);
         }
         
         else if (retcode == 8) {
@@ -510,4 +517,3 @@ int main(void) {
 
     return 0;
 }
-
