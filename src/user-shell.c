@@ -118,21 +118,31 @@ void ls_cmd(struct FAT32DirectoryTable *current_dir) {
 
 
 void cat_cmd(struct FAT32DirectoryTable *current_dir, char *filename) {
-    struct ClusterBuffer cl           = {0};
     uint16_t retcode = 1;
     uint16_t i = 0;
     uint32_t parent_cluster = (current_dir->table[0].cluster_high << 16) | current_dir->table[0].cluster_low;
     syscall(9, (uint32_t) &current_dir->table[i].name, (uint32_t) &retcode, (uint32_t) "\0\0\0");
     while (retcode != 0) {
-        
-        if (stringCompare(current_dir->table[i].name, filename) == 0) {
-    
+        char tempName[12] = {0};
+        int jj=0;
+        while(current_dir->table[i].name[jj] != '\0') {
+            tempName[jj] = current_dir->table[i].name[jj];
+            jj++;
+        }
+        for(int j = 0; j < 3; j++) {
+            tempName[jj] = current_dir->table[i].ext[j];
+            jj++;
+        }
+        // syscall(5, (uint32_t) tempName, stringLength(tempName), 0xA);
+        // syscall(5, (uint32_t) "\n", stringLength("\n"), 0xA);
+        if (stringCompare(tempName, filename) == 0) {
+            uint8_t cl[CLUSTER_SIZE]={0};
             struct FAT32DriverRequest request2 = {
                 .buf                   = &cl,
                 .name                  = {0},
                 .ext                   = {0},
                 .parent_cluster_number = parent_cluster,
-                .buffer_size           = CLUSTER_SIZE,
+                .buffer_size           = current_dir->table[i].filesize,
             };
             for(int j = 0; j < 11; j++) {
                 request2.name[j] = current_dir->table[i].name[j];
@@ -156,7 +166,6 @@ void cat_cmd(struct FAT32DirectoryTable *current_dir, char *filename) {
 
 
 void cp_cmd(struct FAT32DirectoryTable *current_dir, char *asal,char *tujuan) {
-    struct ClusterBuffer cl           = {0};
     uint16_t retcode = 1;
     uint16_t i = 0;
     uint32_t parent_cluster = (current_dir->table[0].cluster_high << 16) | current_dir->table[0].cluster_low;
@@ -164,15 +173,15 @@ void cp_cmd(struct FAT32DirectoryTable *current_dir, char *asal,char *tujuan) {
     while (retcode != 0) {
         
         if (stringCompare(current_dir->table[i].name, asal) == 0) {
-    
+            uint8_t cl[CLUSTER_SIZE]={0};
             struct FAT32DriverRequest requestAsal = {
                 .buf                   = &cl,
                 .name                  = {0},
                 .ext                   = {0},
                 .parent_cluster_number = parent_cluster,
-                .buffer_size           = CLUSTER_SIZE,
+                .buffer_size           = current_dir->table[i].filesize,
             };
-            for(int j = 0; j < 11; j++) {
+            for(int j = 0; j < 8; j++) {
                 requestAsal.name[j] = current_dir->table[i].name[j];
             }
             for(int j = 0; j < 3; j++) {
@@ -186,7 +195,7 @@ void cp_cmd(struct FAT32DirectoryTable *current_dir, char *asal,char *tujuan) {
                     .name                  = {0},
                     .ext                   = {0},
                     .parent_cluster_number = parent_cluster,
-                    .buffer_size           = CLUSTER_SIZE,
+                    .buffer_size           = current_dir->table[i].filesize,
                 };
                 for(int j = 0; j < 11; j++) {
                     requestTujuan.name[j] = tujuan[j];
@@ -282,7 +291,6 @@ void cd_cmd(char *input, void *restrict path, uint16_t *count, struct FAT32Direc
 }
 
 void rm_cmd(struct FAT32DirectoryTable *current_dir, char *filename) {
-    struct ClusterBuffer cl = {0};
     uint16_t retcode = 1;
     uint16_t i = 0;
     uint32_t parent_cluster = (current_dir->table[0].cluster_high << 16) | current_dir->table[0].cluster_low;
@@ -290,13 +298,13 @@ void rm_cmd(struct FAT32DirectoryTable *current_dir, char *filename) {
     while (retcode != 0) {
         
         if (stringCompare(current_dir->table[i].name, filename) == 0) {
-    
+            uint8_t cl[current_dir->table[i].filesize];
             struct FAT32DriverRequest request2 = {
                 .buf                   = &cl,
                 .name                  = {0},
                 .ext                   = {0},
                 .parent_cluster_number = parent_cluster,
-                .buffer_size           = CLUSTER_SIZE,
+                .buffer_size           = current_dir->table[i].filesize,
             };
             for(int j = 0; j < 11; j++) {
                 request2.name[j] = current_dir->table[i].name[j];
@@ -306,13 +314,12 @@ void rm_cmd(struct FAT32DirectoryTable *current_dir, char *filename) {
             }
             syscall(0, (uint32_t) &request2, (uint32_t) &retcode, 0);
             if(retcode == 0) {
-                syscall(3, (uint32_t) &request2, (uint32_t) &retcode, 0);
+                syscall(3, (uint32_t) &request2, (uint32_t) &retcode, 0); //delete file
                 if (retcode == 1) {
                     syscall(5, (uint32_t) "rm: file not found\n", stringLength("rm: file not found\n"), 0xF);
                 }
                 return;
             }
-            
         }
         i++;
         syscall(9, (uint32_t) &current_dir->table[i].name, (uint32_t) &retcode, (uint32_t) "\0\0\0");
@@ -321,21 +328,22 @@ void rm_cmd(struct FAT32DirectoryTable *current_dir, char *filename) {
 }
 
 void mv_cmd(struct FAT32DirectoryTable *current_dir, char *source, char *dest) {
-    struct ClusterBuffer cl           = {0};
     uint16_t retcode = 1;
     uint16_t i = 0;
     uint32_t parent_cluster = (current_dir->table[0].cluster_high << 16) | current_dir->table[0].cluster_low;
     syscall(9, (uint32_t) &current_dir->table[i].name, (uint32_t) &retcode, (uint32_t) "\0\0\0");
     while (retcode != 0) {
-        
         if (stringCompare(current_dir->table[i].name, source) == 0) {
-    
+            uint8_t cl[current_dir->table[i].filesize];
+            for (uint32_t j = 0; j < current_dir->table[i].filesize; j++) {
+                cl[j] = 0;
+            }
             struct FAT32DriverRequest requestSource = {
                 .buf                   = &cl,
                 .name                  = {0},
                 .ext                   = {0},
                 .parent_cluster_number = parent_cluster,
-                .buffer_size           = CLUSTER_SIZE,
+                .buffer_size           = current_dir->table[i].filesize,
             };
             for(int j = 0; j < 11; j++) {
                 requestSource.name[j] = current_dir->table[i].name[j];
@@ -350,7 +358,7 @@ void mv_cmd(struct FAT32DirectoryTable *current_dir, char *source, char *dest) {
                     .name                  = {0},
                     .ext                   = {0},
                     .parent_cluster_number = parent_cluster,
-                    .buffer_size           = CLUSTER_SIZE,
+                    .buffer_size           = current_dir->table[i].filesize,
                 };
                 for(int j = 0; j < 11; j++) {
                     requestDest.name[j] = dest[j];
@@ -359,16 +367,47 @@ void mv_cmd(struct FAT32DirectoryTable *current_dir, char *source, char *dest) {
                     requestDest.ext[j] = current_dir->table[i].ext[j];
                 }
                 syscall(0, (uint32_t) &requestDest, (uint32_t) &retcode, 0);
-                if (retcode==0){ // if destination is a file
+                
+                // if dest is a file (direwrite) or dest not found
+                if (retcode==0 || retcode==3){ 
                     syscall(2, (uint32_t) &requestDest, (uint32_t) &retcode, 0); // write new file 
                     uint16_t trash;
                     syscall(3, (uint32_t) &requestSource, (uint32_t) &trash, 0); // delete source file
+                
+                // if dest is a folder (di masukin ke folder)
                 } else if (retcode==1){
-                    // read directory
+                    const char* str_path = dest;  
+                    struct FAT32DirectoryTable new_dir;
+                    uint32_t parent_cluster = (current_dir->table[0].cluster_high << 16) | current_dir->table[0].cluster_low;
+                    struct FAT32DriverRequest request = {
+                        .buf                   = &new_dir,
+                        .name                  = {0},
+                        .ext                   = "\0\0\0",
+                        .parent_cluster_number = parent_cluster,
+                        .buffer_size           = CLUSTER_SIZE,
+                    };
+                    // jika path dimulai dengan "./"
+                    if (*str_path == '.' && *(str_path+1) == '/') str_path = str_path + 2;
+                    
+                    for (uint8_t i = 0; i < 8; i++) request.name[i] = str_path[i];
+                    syscall(1, (uint32_t) &request, (uint32_t) &retcode, 0);
+                    uint32_t new_cluster_path = new_dir.table[0].cluster_high << 16 | new_dir.table[0].cluster_low;
+
+                    // struct FAT32DriverRequest writeReq = {
+                    //     .buf                   = &cl,
+                    //     .name                  = {0},
+                    //     .ext                   = "\0\0\0",
+                    //     .parent_cluster_number = new_cluster_path,
+                    //     .buffer_size           = current_dir->table[i].filesize,
+                    // };      
+                    requestDest.parent_cluster_number = new_cluster_path;
+
+                    syscall(2, (uint32_t) &requestDest, (uint32_t) &retcode, 0); // write new file 
+                    uint16_t trash;
+                    syscall(3, (uint32_t) &requestSource, (uint32_t) &trash, 0); // delete source file
                 }
                 return;
             }
-            
         }
         i++;
         syscall(9, (uint32_t) &current_dir->table[i].name, (uint32_t) &retcode, (uint32_t) "\0\0\0");
