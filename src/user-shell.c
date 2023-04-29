@@ -447,50 +447,49 @@ void mv_cmd(struct FAT32DirectoryTable *current_dir, char *source, char *dest) {
     syscall(5, (uint32_t) "File not found\n", 15, 0xF);
 }
 
-// void whereis_cmd(char *user_input, uint16_t cluster_number, char *res) {
-//     struct FAT32DirectoryTable dir = {0};
-//     syscall(8, (uint32_t) &dir, (uint32_t) cluster_number, 0);
+void whereis_cmd(char *user_input, uint16_t cluster_number, char *res) {
+    struct FAT32DirectoryTable dir = {0};
+    syscall(8, (uint32_t) &dir, (uint32_t) cluster_number, 0);
 
-//     uint16_t i = 0;
-//     uint16_t retcode = 0;
-//     syscall(9, (uint32_t) dir.table[i].name, (uint32_t) &retcode, (uint32_t) "\0\0\0");
+    uint16_t i = 0;
+    uint16_t retcode = 0;
+    syscall(9, (uint32_t) dir.table[i].name, (uint32_t) &retcode, (uint32_t) "\0\0\0");
 
-//     char filename[11] = {0};
-//     uint8_t j = 0;
-//     for (j = 0; j < stringLength(dir.table[i].name); j++) {
-//         filename[j] = dir.table[i].name[j];
-//     }
-//     for (j = j; j < stringLength(dir.table[i].ext) ; j++) {
-//         filename[j] = dir.table[i].ext[j];
-//     }
+    char filename[11] = {0};
+    uint8_t j = 0;
+    for (j = 0; j < stringLength(dir.table[i].name); j++) {
+        filename[j] = dir.table[i].name[j];
+    }
+    for (j = j; j < stringLength(dir.table[i].ext) ; j++) {
+        filename[j] = dir.table[i].ext[j];
+    }
 
-    // if (stringCompare(user_input, filename) == 0) {
-    //     return
-    // } else {
+    while (retcode != 0) {
+        if (stringCompare(user_input, filename) == 0) {
+            return
+        } 
 
-    // }
-
-    // while (retcode != 0) {
-    //     if (current_dir->table[i].attribute == 0) color = 0x9;
-    //     else color = 0xF;
-
-    //     syscall(5, (uint32_t) current_dir->table[i].name, stringLength(current_dir->table[i].name), color);
+        j = 0;
+        for (j = 0; j < stringLength(dir.table[i].name); j++) {
+            filename[j] = dir.table[i].name[j];
+        }
+        for (j = j; j < stringLength(dir.table[i].ext) ; j++) {
+            filename[j] = dir.table[i].ext[j];
+        }
         
-    //     if (current_dir->table[i].ext[0] != '\0') {
-    //         syscall(5, (uint32_t) ".", 1, color);
-    //         syscall(5, (uint32_t) current_dir->table[i].ext, 3, color);
-    //     }
-    //     syscall(5, (uint32_t) "\n", 1, color);
-        
-    //     i++;
-    //     syscall(9, (uint32_t) &current_dir->table[i].name, (uint32_t) &retcode, (uint32_t) "\0\0\0");
-    // }    
-// }
+        if (dir.table[i].attribute != 0){
+            whereis_cmd(user_input, ,res);
+        }
+        i++;
+        syscall(9, (uint32_t) dir.table[i].name, (uint32_t) &retcode, (uint32_t) "\0\0\0");
+    }    
+}
 
 int main(void) {
     int32_t retcode;
     char args[MAX_ARGS][MAX_ARG_LEN];
     uint8_t argcount = 0;
+    char where_is_path[100];
     // int arg_count;    
     struct FAT32DirectoryTable current_dir = {0};
     // struct FAT32DriverRequest request = {
@@ -549,7 +548,7 @@ int main(void) {
             else mv_cmd(&current_dir, args[1], args[2]);
         }
         else if(retcode==7) {
-            // whereis_cmd(args[1], 2);
+            whereis_cmd(args[1], 2, &where_is_path);
             // struct FAT32DriverRequest request2 = {
             //     .buf                   = "trytyr\n asku\n ask",
             //     .name                  = "a",
