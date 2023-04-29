@@ -294,7 +294,7 @@ void rm_cmd(struct FAT32DirectoryTable *current_dir, char *filename) {
     while (retcode != 0) {
         
         if (stringCompare(current_dir->table[i].name, filename) == 0) {
-            uint8_t cl[current_dir->table[i].filesize] = {0};
+            uint8_t cl[current_dir->table[i].filesize];
             struct FAT32DriverRequest request2 = {
                 .buf                   = &cl,
                 .name                  = {0},
@@ -323,14 +323,17 @@ void rm_cmd(struct FAT32DirectoryTable *current_dir, char *filename) {
     syscall(5, (uint32_t) "File not found\n", 15, 0xF);
 }
 
-void mv_cmd(struct FAT32DirectoryTable *current_dir, void *restrict path, char *source, char *dest) {
+void mv_cmd(struct FAT32DirectoryTable *current_dir, char *source, char *dest) {
     uint16_t retcode = 1;
     uint16_t i = 0;
     uint32_t parent_cluster = (current_dir->table[0].cluster_high << 16) | current_dir->table[0].cluster_low;
     syscall(9, (uint32_t) &current_dir->table[i].name, (uint32_t) &retcode, (uint32_t) "\0\0\0");
     while (retcode != 0) {
         if (stringCompare(current_dir->table[i].name, source) == 0) {
-            uint8_t cl[current_dir->table[i].filesize] = {0};
+            uint8_t cl[current_dir->table[i].filesize];
+            for (uint32_t j = 0; j < current_dir->table[i].filesize; j++) {
+                cl[j] = 0;
+            }
             struct FAT32DriverRequest requestSource = {
                 .buf                   = &cl,
                 .name                  = {0},
