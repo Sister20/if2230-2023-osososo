@@ -133,9 +133,13 @@ void cat_cmd(struct FAT32DirectoryTable *current_dir, char *filename) {
             tempName[jj] = current_dir->table[i].name[jj];
             jj++;
         }
-        tempName[jj]='.';
         jj++;
+        int tanda=1;
         for(int j = 0; j < 3; j++) {
+            if(current_dir->table[i].ext[j] != '\0' && tanda==1){
+                tempName[jj-1]='.';
+                tanda=0;  
+            } 
             tempName[jj] = current_dir->table[i].ext[j];
             jj++;
         }
@@ -183,9 +187,13 @@ void cp_cmd(struct FAT32DirectoryTable *current_dir, char *asal,char *tujuan) {
             tempName[jj] = current_dir->table[i].name[jj];
             jj++;
         }
-        tempName[jj]='.';
         jj++;
+        int tanda=1;
         for(int j = 0; j < 3; j++) {
+            if(current_dir->table[i].ext[j] != '\0' && tanda==1){
+                tempName[jj-1]='.';
+                tanda=0;  
+            } 
             tempName[jj] = current_dir->table[i].ext[j];
             jj++;
         }
@@ -208,16 +216,37 @@ void cp_cmd(struct FAT32DirectoryTable *current_dir, char *asal,char *tujuan) {
             if(retcode == 0) {
                 char namaTujuan[8] ;
                 char extTujuan[3];
-                for(int j = 0; j < 8; j++) {
-                    if(tujuan[j] == '.')break;
-                    namaTujuan[j] = tujuan[j];
+                bool adaTitik = FALSE;
+                if(stringLength(tujuan)>8){
+                    adaTitik=TRUE;
                 }
-                int kk=0;
-                while(tujuan[kk] != '.')kk++;
-                kk++;
-                for(int j = 0; j < 3; j++) {
-                    extTujuan[j] = tujuan[kk];
+                else{
+                    for(int j=0;j<8;j++){
+                        if(tujuan[j]=='.'){
+                            adaTitik=TRUE;
+                        }
+                    }
+                }
+
+                if (adaTitik){
+                    for(int j = 0; j < 8; j++) {
+                        if(tujuan[j] == '.')break;
+                        namaTujuan[j] = tujuan[j];
+                    }
+                    int kk=0;
+
+                    while(tujuan[kk] != '.')kk++;
                     kk++;
+                    for(int j = 0; j < 3; j++) {
+                        extTujuan[j] = tujuan[kk];
+                        kk++;
+                    }
+
+                } else {
+                    for(int j = 0; j < 8; j++) {
+                        if(tujuan[j] == '.')break;
+                        namaTujuan[j] = tujuan[j];
+                    }
                 }
                 
                 struct FAT32DriverRequest requestTujuan = {
@@ -332,8 +361,26 @@ void rm_cmd(struct FAT32DirectoryTable *current_dir, char *filename) {
     uint32_t parent_cluster = (current_dir->table[0].cluster_high << 16) | current_dir->table[0].cluster_low;
     syscall(9, (uint32_t) &current_dir->table[i].name, (uint32_t) &retcode, (uint32_t) "\0\0\0");
     while (retcode != 0) {
-        
-        if (stringCompare(current_dir->table[i].name, filename) == 0) {
+        char tempName[12] = {0};
+        int jj=0;
+        while(current_dir->table[i].name[jj] != '\0') {
+            tempName[jj] = current_dir->table[i].name[jj];
+            jj++;
+        }
+        jj++;
+        int tanda=1;
+        for(int j = 0; j < 3; j++) {
+            if(current_dir->table[i].ext[j] != '\0' && tanda==1){
+                tempName[jj-1]='.';
+                tanda=0;  
+            } 
+            tempName[jj] = current_dir->table[i].ext[j];
+            jj++;
+        }
+        syscall(5, (uint32_t) tempName, stringLength(tempName), 0xF);
+        syscall(5, (uint32_t) "\n", stringLength("\n"), 0xF);
+        if (stringCompare(tempName, filename) == 0) {
+            syscall(5, (uint32_t) "masukk\n", stringLength("masukk\n"), 0xF);
             uint8_t cl[current_dir->table[i].filesize];
             struct FAT32DriverRequest request2 = {
                 .buf                   = &cl,
@@ -342,7 +389,7 @@ void rm_cmd(struct FAT32DirectoryTable *current_dir, char *filename) {
                 .parent_cluster_number = parent_cluster,
                 .buffer_size           = current_dir->table[i].filesize,
             };
-            for(int j = 0; j < 11; j++) {
+            for(int j = 0; j < 8; j++) {
                 request2.name[j] = current_dir->table[i].name[j];
             }
             for(int j = 0; j < 3; j++) {
@@ -369,7 +416,23 @@ void mv_cmd(struct FAT32DirectoryTable *current_dir, char *source, char *dest) {
     uint32_t parent_cluster = (current_dir->table[0].cluster_high << 16) | current_dir->table[0].cluster_low;
     syscall(9, (uint32_t) &current_dir->table[i].name, (uint32_t) &retcode, (uint32_t) "\0\0\0");
     while (retcode != 0) {
-        if (stringCompare(current_dir->table[i].name, source) == 0) {
+        char tempName[12] = {0};
+        int jj=0;
+        while(current_dir->table[i].name[jj] != '\0') {
+            tempName[jj] = current_dir->table[i].name[jj];
+            jj++;
+        }
+        jj++;
+        int tanda=1;
+        for(int j = 0; j < 3; j++) {
+            if(current_dir->table[i].ext[j] != '\0' && tanda==1){
+                tempName[jj-1]='.';
+                tanda=0;  
+            } 
+            tempName[jj] = current_dir->table[i].ext[j];
+            jj++;
+        }
+        if (stringCompare(tempName, source) == 0) {
             uint8_t cl[current_dir->table[i].filesize];
             for (uint32_t j = 0; j < current_dir->table[i].filesize; j++) {
                 cl[j] = 0;
@@ -381,70 +444,134 @@ void mv_cmd(struct FAT32DirectoryTable *current_dir, char *source, char *dest) {
                 .parent_cluster_number = parent_cluster,
                 .buffer_size           = current_dir->table[i].filesize,
             };
-            for(int j = 0; j < 11; j++) {
+            for(int j = 0; j < 8; j++) {
                 requestSource.name[j] = current_dir->table[i].name[j];
             }
             for(int j = 0; j < 3; j++) {
                 requestSource.ext[j] = current_dir->table[i].ext[j];
             }
+            // syscall(5, (uint32_t) "name\n", 5, 0xF);
+            // syscall(5, (uint32_t) requestSource.name, stringLength(requestSource.name), 0xF);
+            // syscall(5, (uint32_t) "ext\n", 4, 0xF);
+            // syscall(5, (uint32_t) requestSource.ext, stringLength(requestSource.ext), 0xF);
+            // syscall(5, (uint32_t) "\n", 1, 0xF);
             syscall(0, (uint32_t) &requestSource, (uint32_t) &retcode, 0);
+
+            struct FAT32DriverRequest requestDest = {
+                .buf                   = cl,
+                .name                  = {0},
+                .ext                   = {0},
+                .parent_cluster_number = parent_cluster,
+                .buffer_size           = current_dir->table[i].filesize,
+            };
+
+            // memcpy(requestDest.buf, requestSource.buf, requestSource.buffer_size);
+            // syscall(10, (uint32_t)&requestDest.buf, (uint32_t)&requestSource.buf, (uint32_t)&requestSource.buffer_size);
+            // if source is a file
             if(retcode == 0) {
-                struct FAT32DriverRequest requestDest = {
-                    .buf                   = &cl,
-                    .name                  = {0},
-                    .ext                   = {0},
-                    .parent_cluster_number = parent_cluster,
-                    .buffer_size           = current_dir->table[i].filesize,
-                };
-                for(int j = 0; j < 11; j++) {
-                    requestDest.name[j] = dest[j];
+                syscall(5, (uint32_t) "masukk\n", 7, 0xF);
+                char namaTujuan[8] ;
+                char extTujuan[3];
+
+                bool adaTitik = FALSE;
+                if(stringLength(dest)>8){
+                    adaTitik=TRUE;
+                }
+                else{
+                    for(int j=0;j<8;j++){
+                        if(dest[j]=='.'){
+                            adaTitik=TRUE;
+                        }
+                    }
+                }
+
+                if (adaTitik){
+                    for(int j = 0; j < 8; j++) {
+                        if(dest[j] == '.')break;
+                        namaTujuan[j] = dest[j];
+                    }
+                    int kk=0;
+
+                    while(dest[kk] != '.')kk++;
+                    kk++;
+                    for(int j = 0; j < 3; j++) {
+                        extTujuan[j] = dest[kk];
+                        kk++;
+                    }
+
+                } else {
+                    for(int j = 0; j < 8; j++) {
+                        if(dest[j] == '.')break;
+                        namaTujuan[j] = dest[j];
+                    }
+                }
+
+                syscall(5, (uint32_t) "disninii\n", 7, 0xF);
+
+
+
+                for(int j = 0; j < 8; j++) {
+                    requestDest.name[j] = namaTujuan[j];
                 }
                 for(int j = 0; j < 3; j++) {
-                    requestDest.ext[j] = current_dir->table[i].ext[j];
+                    requestDest.ext[j] = extTujuan[j];
                 }
                 syscall(0, (uint32_t) &requestDest, (uint32_t) &retcode, 0);
                 
-                // if dest is a file (direwrite) or dest not found
-                if (retcode==0 || retcode==3){ 
-                    syscall(5, (uint32_t) requestDest.name, stringLength(requestDest.name), 0xF);
-                    
-                    syscall(2, (uint32_t) &requestDest, (uint32_t) &retcode, 0); // write new file 
-                    uint16_t trash;
-                    syscall(3, (uint32_t) &requestSource, (uint32_t) &trash, 0); // delete source file
                 
+                // if dest is a file (direwrite) or not found
+                if (retcode==0 || retcode==3){ 
+                    syscall(3, (uint32_t) &requestSource, (uint32_t) &retcode, 0); // delete source file
+                    // syscall(5, (uint32_t) "masukb\n", 7, 0xF);
+                    // syscall(5, (uint32_t) requestDest.name, stringLength(requestDest.name), 0xF);
+                    // syscall(5, (uint32_t) requestDest.ext, stringLength(requestDest.ext), 0xF);
+                    // syscall(5, (uint32_t) requestDest.name, stringLength(requestDest.name), 0xF);
+                    if (retcode==0){
+                        syscall(3, (uint32_t) &requestDest, (uint32_t) &retcode, 0); // delete source file
+                    }
+                    syscall(2, (uint32_t) &requestDest, (uint32_t) &retcode, 0); // write new file
+                     
                 // if dest is a folder (di masukin ke folder)
-                } else if (retcode==1){
-                    const char* str_path = dest;  
-                    struct FAT32DirectoryTable new_dir;
-                    uint32_t parent_cluster = (current_dir->table[0].cluster_high << 16) | current_dir->table[0].cluster_low;
-                    struct FAT32DriverRequest request = {
-                        .buf                   = &new_dir,
-                        .name                  = {0},
-                        .ext                   = "\0\0\0",
-                        .parent_cluster_number = parent_cluster,
-                        .buffer_size           = CLUSTER_SIZE,
-                    };
-                    // jika path dimulai dengan "./"
-                    if (*str_path == '.' && *(str_path+1) == '/') str_path = str_path + 2;
-                    
-                    for (uint8_t i = 0; i < 8; i++) request.name[i] = str_path[i];
-                    syscall(1, (uint32_t) &request, (uint32_t) &retcode, 0);
-                    uint32_t new_cluster_path = new_dir.table[0].cluster_high << 16 | new_dir.table[0].cluster_low;
+                } else {
 
-                    requestDest.parent_cluster_number = new_cluster_path;
+                    syscall(1, (uint32_t) &requestDest, (uint32_t) &retcode, 0);
 
+                    // if dest is directory
+                    if (retcode==0){
+                        syscall(5, (uint32_t) "masukf\n", 7, 0xF);
+                        const char* str_path = dest;  
+                        struct FAT32DirectoryTable new_dir;
+                        uint32_t parent_cluster = (current_dir->table[0].cluster_high << 16) | current_dir->table[0].cluster_low;
+                        struct FAT32DriverRequest request = {
+                            .buf                   = &new_dir,
+                            .name                  = {0},
+                            .ext                   = "\0\0\0",
+                            .parent_cluster_number = parent_cluster,
+                            .buffer_size           = CLUSTER_SIZE,
+                        };
+                        
+                        // jika path dimulai dengan "./"
+                        if (*str_path == '.' && *(str_path+1) == '/') str_path = str_path + 2;
+                        
+                        for (uint8_t i = 0; i < 8; i++) request.name[i] = str_path[i];
+                        syscall(1, (uint32_t) &request, (uint32_t) &retcode, 0);
+                        uint32_t new_cluster_path = new_dir.table[0].cluster_high << 16 | new_dir.table[0].cluster_low;
 
-                    syscall(2, (uint32_t) &requestDest, (uint32_t) &retcode, 0); // write new file 
-                    uint16_t trash;
-                    syscall(3, (uint32_t) &requestSource, (uint32_t) &trash, 0); // delete source file
+                        requestDest.parent_cluster_number = new_cluster_path;
+
+                        syscall(3, (uint32_t) &requestSource, (uint32_t) &retcode, 0); // delete source file
+                        syscall(2, (uint32_t) &requestDest, (uint32_t) &retcode, 0); // write new file 
+                    }
                 }
                 return;
+            // if source is not a file
+            } else {
+                syscall(5, (uint32_t) "File not found\n", 15, 0xF);
             }
         }
         i++;
         syscall(9, (uint32_t) &current_dir->table[i].name, (uint32_t) &retcode, (uint32_t) "\0\0\0");
     }
-    syscall(5, (uint32_t) "File not found\n", 15, 0xF);
 }
 
 void whereis_cmd(char *user_input, uint16_t cluster_number, char *res) {
