@@ -34,6 +34,47 @@ int stringLength(const char *str) {
     return i;
 }
 
+#define MAX_ARGS 10
+#define MAX_ARG_LEN 50
+
+int parse_input(char* input, char args[MAX_ARGS][MAX_ARG_LEN]) {
+    int arg_count = 0;
+    int len = stringLength(input);
+    int i = 0, j = 0;
+
+    while (i < len) {
+        // skip leading whitespace
+        while (input[i] == ' ') {
+            i++;
+        }
+
+        // break at end of string
+        if (i == len) {
+            break;
+        }
+
+        // start of new argument
+        j = 0;
+
+        // copy argument to array
+        while (input[i] != ' ' && i < len) {
+            args[arg_count][j++] = input[i++];
+        }
+
+        args[arg_count][j] = '\0';
+        arg_count++;
+
+        // check if we've exceeded the maximum number of arguments
+        if (arg_count == MAX_ARGS) {
+            break;
+        }
+    }
+
+    return arg_count;
+}
+
+
+
 void printPath(void *restrict path, uint16_t count, struct FAT32DirectoryTable *current_dir) {
     syscall(6, (uint32_t) current_dir, sizeof(struct FAT32DirectoryTable), 0);
     for (uint16_t i = 0; i < count; i++) {
@@ -46,21 +87,37 @@ void printPath(void *restrict path, uint16_t count, struct FAT32DirectoryTable *
 void ls_cmd(struct FAT32DirectoryTable *current_dir) {
     uint16_t retcode = 1;
     
-    uint16_t i = 0;
-    syscall(9, (uint32_t) *((uint16_t*)current_dir + i), (uint32_t) &retcode, 0);
+    uint16_t i = 1;
+    syscall(9, (uint32_t) &current_dir->table[i].name, (uint32_t) &retcode, (uint32_t) "\0\0\0");
     while (retcode != 0) {
         syscall(5, (uint32_t) current_dir->table[i].name, stringLength(current_dir->table[i].name), 0xF);
         syscall(5, (uint32_t) "\n", 1, 0xA);
         
         i++;
-        syscall(9, (uint32_t) *((uint16_t*)current_dir + i), (uint32_t) &retcode, 0);
+        syscall(9, (uint32_t) &current_dir->table[i].name, (uint32_t) &retcode, (uint32_t) "\0\0\0");
     }
-    
-    // while 
 }
+
+void mkdir_cmd(char *input, struct FAT32DirectoryTable *current_dir) {
+    struct ClusterBuffer cl           = {0};
+    uint8_t retcode = 0;
+    uint32_t parent_cluster = (current_dir->table[0].cluster_high << 16) | current_dir->table[0].cluster_low;
+    struct FAT32DriverRequest request = {
+        .buf                   = &cl,
+        .name                  = {0},
+        .ext                   = "\0\0\0",
+        .parent_cluster_number = parent_cluster,
+        .buffer_size           = CLUSTER_SIZE,
+    };
+    for (uint8_t i = 0; i < 8; i++) request.name[i] = input[i];
+    syscall(2, (uint32_t) &request, (uint32_t) &retcode, 0);
+}
+
 
 int main(void) {
     int32_t retcode;
+    char args[MAX_ARGS][MAX_ARG_LEN];
+    // int arg_count;    
     struct FAT32DirectoryTable current_dir = {0};
     // struct FAT32DriverRequest request = {
     //     .buf                   = &current_dir,
@@ -85,7 +142,8 @@ int main(void) {
         syscall(4, (uint32_t) buf, 16, 0);
         
         // Parsing command from user input
-        syscall(7, (uint32_t) buf, (uint32_t) &retcode, 0);       
+        parse_input(buf, args);
+        syscall(7, (uint32_t) args[0], (uint32_t) &retcode, 0); 
 
         // checking return code and calling the right syscall
         if (retcode == 0) {
@@ -94,6 +152,9 @@ int main(void) {
         else if (retcode == 1) {
             ls_cmd(&current_dir);
         }
+        else if (retcode == 2) {
+            mkdir_cmd(args[1], &current_dir);
+        }        
 
         else if (retcode == 8) {
            syscall(5, (uint32_t) buf, stringLength(buf), 0xF); 
