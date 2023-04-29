@@ -100,7 +100,7 @@ int8_t read_directory(struct FAT32DriverRequest request){
     for (unsigned int i = 0; i < (CLUSTER_SIZE / sizeof(struct FAT32DirectoryEntry)); i++) {
         if(memcmp(dir_table.table[i].name, request.name, 8) == 0) {
             if(memcmp(dir_table.table[i].ext, request.ext, 3) == 0) {
-                if(dir_table.table[i].ext[0]==0){
+                if(dir_table.table[i].attribute != 0){
                     uint32_t toberead_cluster_number = (uint32_t)(dir_table.table[i].cluster_high << 16) + (uint32_t)dir_table.table[i].cluster_low; 
                     read_clusters(request.buf,toberead_cluster_number,1);
                     return 0;
@@ -186,14 +186,14 @@ int8_t write(struct FAT32DriverRequest request) {
     // if it's folder
     if (request.buffer_size == 0) {
         for (unsigned int i = 0; i < (CLUSTER_SIZE / sizeof(struct FAT32DirectoryEntry)); i++) {
-            if ((memcmp(&dir_table.table[i].name, &request.name, 8) == 0)) {
+            if ((memcmp(&dir_table.table[i].name, &request.name, 8) == 0) && (dir_table.table[i].attribute != 0)) {
                 return 1;
             }
         }
     // if it's a file
     } else {
         for (unsigned int i = 0; i < (CLUSTER_SIZE / sizeof(struct FAT32DirectoryEntry)); i++) {
-            if ((memcmp(&dir_table.table[i].name, &request.name, 8) == 0) && (memcmp(&dir_table.table[i].ext, &request.ext, 3) == 0)) {
+            if ((memcmp(&dir_table.table[i].name, &request.name, 8) == 0) && (memcmp(&dir_table.table[i].ext, &request.ext, 3) == 0) && (&dir_table.table[i].attribute == 0)) {
                 return 1;
             }
         }        
