@@ -97,7 +97,7 @@ int8_t read_directory(struct FAT32DriverRequest request){
     // found=2 ga ketemu
 
     //code: 0 success - 1 not a folder - 2 not found - -1 unknown
-    for (unsigned int i = 0; i < (CLUSTER_SIZE / sizeof(struct FAT32DirectoryEntry)); i++) {
+    for (unsigned int i = 1; i < (CLUSTER_SIZE / sizeof(struct FAT32DirectoryEntry)); i++) {
         if(memcmp(dir_table.table[i].name, request.name, 8) == 0) {
             if(memcmp(dir_table.table[i].ext, request.ext, 3) == 0) {
                 if(dir_table.table[i].attribute != 0){

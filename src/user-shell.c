@@ -447,6 +447,45 @@ void mv_cmd(struct FAT32DirectoryTable *current_dir, char *source, char *dest) {
     syscall(5, (uint32_t) "File not found\n", 15, 0xF);
 }
 
+// void whereis_cmd(char *user_input, uint16_t cluster_number, char *res) {
+//     struct FAT32DirectoryTable dir = {0};
+//     syscall(8, (uint32_t) &dir, (uint32_t) cluster_number, 0);
+
+//     uint16_t i = 0;
+//     uint16_t retcode = 0;
+//     syscall(9, (uint32_t) dir.table[i].name, (uint32_t) &retcode, (uint32_t) "\0\0\0");
+
+//     char filename[11] = {0};
+//     uint8_t j = 0;
+//     for (j = 0; j < stringLength(dir.table[i].name); j++) {
+//         filename[j] = dir.table[i].name[j];
+//     }
+//     for (j = j; j < stringLength(dir.table[i].ext) ; j++) {
+//         filename[j] = dir.table[i].ext[j];
+//     }
+
+    // if (stringCompare(user_input, filename) == 0) {
+    //     return
+    // } else {
+
+    // }
+
+    // while (retcode != 0) {
+    //     if (current_dir->table[i].attribute == 0) color = 0x9;
+    //     else color = 0xF;
+
+    //     syscall(5, (uint32_t) current_dir->table[i].name, stringLength(current_dir->table[i].name), color);
+        
+    //     if (current_dir->table[i].ext[0] != '\0') {
+    //         syscall(5, (uint32_t) ".", 1, color);
+    //         syscall(5, (uint32_t) current_dir->table[i].ext, 3, color);
+    //     }
+    //     syscall(5, (uint32_t) "\n", 1, color);
+        
+    //     i++;
+    //     syscall(9, (uint32_t) &current_dir->table[i].name, (uint32_t) &retcode, (uint32_t) "\0\0\0");
+    // }    
+// }
 
 int main(void) {
     int32_t retcode;
@@ -509,15 +548,16 @@ int main(void) {
             if (argcount > 3) syscall(5, (uint32_t) "mv: too many arguments\n", stringLength("mv: too many arguments\n"), 0xF);
             else mv_cmd(&current_dir, args[1], args[2]);
         }
-        else if(retcode==7){
-            struct FAT32DriverRequest request2 = {
-                .buf                   = "trytyr\n asku\n ask",
-                .name                  = "a",
-                .ext                   = "usu",
-                .parent_cluster_number = 2,
-                .buffer_size           = CLUSTER_SIZE,
-            };
-            syscall(2, (uint32_t) &request2, (uint32_t) &retcode, 0);
+        else if(retcode==7) {
+            // whereis_cmd(args[1], 2);
+            // struct FAT32DriverRequest request2 = {
+            //     .buf                   = "trytyr\n asku\n ask",
+            //     .name                  = "a",
+            //     .ext                   = "usu",
+            //     .parent_cluster_number = 2,
+            //     .buffer_size           = CLUSTER_SIZE,
+            // };
+            // syscall(2, (uint32_t) &request2, (uint32_t) &retcode, 0);
         }
         
         else if (retcode == 8) {
