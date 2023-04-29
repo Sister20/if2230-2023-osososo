@@ -149,6 +149,58 @@ void cat_cmd(struct FAT32DirectoryTable *current_dir, char *filename) {
     syscall(5, (uint32_t) "File not found\n", 15, 0xF);
 }
 
+
+void cp_cmd(struct FAT32DirectoryTable *current_dir, char *asal,char *tujuan) {
+    struct ClusterBuffer cl           = {0};
+    uint16_t retcode = 1;
+    uint16_t i = 0;
+    uint32_t parent_cluster = (current_dir->table[0].cluster_high << 16) | current_dir->table[0].cluster_low;
+    syscall(9, (uint32_t) &current_dir->table[i].name, (uint32_t) &retcode, (uint32_t) "\0\0\0");
+    while (retcode != 0) {
+        
+        if (stringCompare(current_dir->table[i].name, asal) == 0) {
+    
+            struct FAT32DriverRequest requestAsal = {
+                .buf                   = &cl,
+                .name                  = {0},
+                .ext                   = {0},
+                .parent_cluster_number = parent_cluster,
+                .buffer_size           = CLUSTER_SIZE,
+            };
+            for(int j = 0; j < 11; j++) {
+                requestAsal.name[j] = current_dir->table[i].name[j];
+            }
+            for(int j = 0; j < 3; j++) {
+                requestAsal.ext[j] = current_dir->table[i].ext[j];
+            }
+            syscall(0, (uint32_t) &requestAsal, (uint32_t) &retcode, 0);
+            if(retcode == 0) {
+                syscall(5, (uint32_t) "masuk\n", 6, 0xF);
+                struct FAT32DriverRequest requestTujuan = {
+                    .buf                   = &cl,
+                    .name                  = {0},
+                    .ext                   = {0},
+                    .parent_cluster_number = parent_cluster,
+                    .buffer_size           = CLUSTER_SIZE,
+                };
+                for(int j = 0; j < 11; j++) {
+                    requestTujuan.name[j] = tujuan[j];
+                }
+                for(int j = 0; j < 3; j++) {
+                    requestTujuan.ext[j] = current_dir->table[i].ext[j];
+                }
+                syscall(2, (uint32_t) &requestTujuan, (uint32_t) &retcode, 0);
+                syscall(5, (uint32_t) "Berhasil ditambahkan\n", 21, 0xF);
+                return;
+            }
+            
+        }
+        i++;
+        syscall(9, (uint32_t) &current_dir->table[i].name, (uint32_t) &retcode, (uint32_t) "\0\0\0");
+    }
+    syscall(5, (uint32_t) "File not found\n", 15, 0xF);
+}
+
 void mkdir_cmd(char *input, struct FAT32DirectoryTable *current_dir) {
     uint8_t retcode = 0;
     syscall(9, (uint32_t) input, (uint32_t) &retcode, (uint32_t) "\0\0\0");
@@ -240,6 +292,9 @@ int main(void) {
         }        
         else if(retcode==3){
             cat_cmd(&current_dir, args[1]);
+        }
+        else if(retcode==4){
+            cp_cmd(&current_dir, args[1], args[2]);
         }
         
         else if (retcode == 8) {
