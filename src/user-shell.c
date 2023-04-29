@@ -154,7 +154,7 @@ void cat_cmd(struct FAT32DirectoryTable *current_dir, char *filename) {
                 .parent_cluster_number = parent_cluster,
                 .buffer_size           = current_dir->table[i].filesize,
             };
-            for(int j = 0; j < 11; j++) {
+            for(int j = 0; j < 8; j++) {
                 request2.name[j] = current_dir->table[i].name[j];
             }
             for(int j = 0; j < 3; j++) {
