@@ -85,8 +85,6 @@ int parse_input(char* input, char args[MAX_ARGS][MAX_ARG_LEN]) {
     return arg_count;
 }
 
-
-
 void printPath(void *restrict path, uint16_t count, struct FAT32DirectoryTable *current_dir) {
     syscall(6, (uint32_t) current_dir, sizeof(struct FAT32DirectoryTable), 0);
     for (uint16_t i = 0; i < count; i++) {
@@ -129,6 +127,8 @@ void cat_cmd(struct FAT32DirectoryTable *current_dir, char *filename) {
             tempName[jj] = current_dir->table[i].name[jj];
             jj++;
         }
+        tempName[jj]='.';
+        jj++;
         for(int j = 0; j < 3; j++) {
             tempName[jj] = current_dir->table[i].ext[j];
             jj++;
@@ -171,8 +171,19 @@ void cp_cmd(struct FAT32DirectoryTable *current_dir, char *asal,char *tujuan) {
     uint32_t parent_cluster = (current_dir->table[0].cluster_high << 16) | current_dir->table[0].cluster_low;
     syscall(9, (uint32_t) &current_dir->table[i].name, (uint32_t) &retcode, (uint32_t) "\0\0\0");
     while (retcode != 0) {
-        
-        if (stringCompare(current_dir->table[i].name, asal) == 0) {
+        char tempName[12] = {0};
+        int jj=0;
+        while(current_dir->table[i].name[jj] != '\0') {
+            tempName[jj] = current_dir->table[i].name[jj];
+            jj++;
+        }
+        tempName[jj]='.';
+        jj++;
+        for(int j = 0; j < 3; j++) {
+            tempName[jj] = current_dir->table[i].ext[j];
+            jj++;
+        }
+        if (stringCompare(tempName, asal) == 0) {
             uint8_t cl[CLUSTER_SIZE]={0};
             struct FAT32DriverRequest requestAsal = {
                 .buf                   = &cl,
@@ -189,7 +200,20 @@ void cp_cmd(struct FAT32DirectoryTable *current_dir, char *asal,char *tujuan) {
             }
             syscall(0, (uint32_t) &requestAsal, (uint32_t) &retcode, 0);
             if(retcode == 0) {
-                syscall(5, (uint32_t) "masuk\n", 6, 0xF);
+                char namaTujuan[8] ;
+                char extTujuan[3];
+                for(int j = 0; j < 8; j++) {
+                    if(tujuan[j] == '.')break;
+                    namaTujuan[j] = tujuan[j];
+                }
+                int kk=0;
+                while(tujuan[kk] != '.')kk++;
+                kk++;
+                for(int j = 0; j < 3; j++) {
+                    extTujuan[j] = tujuan[kk];
+                    kk++;
+                }
+                
                 struct FAT32DriverRequest requestTujuan = {
                     .buf                   = &cl,
                     .name                  = {0},
@@ -197,11 +221,16 @@ void cp_cmd(struct FAT32DirectoryTable *current_dir, char *asal,char *tujuan) {
                     .parent_cluster_number = parent_cluster,
                     .buffer_size           = current_dir->table[i].filesize,
                 };
-                for(int j = 0; j < 11; j++) {
-                    requestTujuan.name[j] = tujuan[j];
+                for(int j = 0; j < 8; j++) {
+                    requestTujuan.name[j] = namaTujuan[j];
                 }
                 for(int j = 0; j < 3; j++) {
-                    requestTujuan.ext[j] = current_dir->table[i].ext[j];
+                    requestTujuan.ext[j] = extTujuan[j];
+                }
+                requestTujuan.buf=requestAsal.buf;
+                if(stringCompare(asal,tujuan)==0){
+                    syscall(5, (uint32_t) "Nama file sama\n", 16, 0xF);
+                    return;
                 }
                 syscall(2, (uint32_t) &requestTujuan, (uint32_t) &retcode, 0);
                 syscall(5, (uint32_t) "Berhasil ditambahkan\n", 21, 0xF);
@@ -477,6 +506,17 @@ int main(void) {
             if (argcount > 3) syscall(5, (uint32_t) "mv: too many arguments\n", stringLength("mv: too many arguments\n"), 0xF);
             else mv_cmd(&current_dir, args[1], args[2]);
         }
+        else if(retcode==7){
+            struct FAT32DriverRequest request2 = {
+                .buf                   = "trytyr\n asku\n ask",
+                .name                  = "a",
+                .ext                   = "usu",
+                .parent_cluster_number = 2,
+                .buffer_size           = CLUSTER_SIZE,
+            };
+            syscall(2, (uint32_t) &request2, (uint32_t) &retcode, 0);
+        }
+        
         else if (retcode == 8) {
            syscall(5, (uint32_t) buf, stringLength(buf), 0xF); 
            syscall(5, (uint32_t) ": command not found\n", stringLength(": command not found\n"), 0xF);
@@ -490,4 +530,3 @@ int main(void) {
 
     return 0;
 }
-
