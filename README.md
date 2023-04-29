@@ -1,6 +1,11 @@
-# OSOSOSO OS
+<div align="center">
+  <h1 align="center">OSOSOSO OS</h1>
 
-This project is made to fulfill the 1st, 2nd, and 3rd milestone for the Operating System. It is a simple os that can do simple command like ls, mkdir, cp, cd, cat, and mv. It also implemented by using multiprogramming and message passing
+  <p align="center">
+    This project is made to fulfill the 1st, 2nd, and 3rd milestone for the Operating System. It is a simple os that can do simple command like ls, mkdir, cp, cd, cat, and mv. It also implemented by using multiprogramming and message passing
+    <br />
+  </p>
+</div>
 
 ## Made by
 
@@ -19,13 +24,13 @@ This project is made to fulfill the 1st, 2nd, and 3rd milestone for the Operatin
 
 ## Technologies Used
 
-1. [VirtualBox](https://www.virtualbox.org/)
-2. [Window Subsytem for Linux](https://docs.microsoft.com/en-us/windows/wsl/install)
-3. [Ubuntu 20.04 LTS](https://releases.ubuntu.com/20.04/)
-4. [Nasm](https://www.nasm.us/)
-5. [bcc](https://bochs.sourceforge.io/)
-6. bochs
-7. c
+    - Linux Operating System (Ubuntu)
+    - Netwide assembler
+    - GNU C Compiler
+    - GNU Linker
+    - QEMU - System i386
+    - GNU Make
+    - genisoimage
 
 ## Features
 
@@ -43,16 +48,9 @@ This OS was in implementation from the boilerplate given by sister20. In this OS
 
 ## Setup
 
-1. Install all the requirements in the technologies section
-
-```
-sudo apt update
-sudo apt install gcc nasm make qemu-system-x86 genisoimage
-```
-
-2. Run the virtual machine using VirtualBox (Another option by using [WSL2](https://github.com/Sister19/WSL-Troubleshoot))
-3. clone the github repository by using `git clone https://github.com/Sister20/if2230-2023-osososo`
-4. run `make all run` and eureka
+1. clone repository ini pada Ubuntu 22.04 (Another option WSL)
+2. ketik `make shell` pada root directory repo ini
+3. kemudian ketik `make run`
 
 ## Command
 1. `cd <target_dir>` - move from current directory to target dir
