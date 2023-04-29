@@ -223,31 +223,6 @@ void mkdir_cmd(char *input, struct FAT32DirectoryTable *current_dir) {
     }
 }
 
-void cd_cmd(char *input, void *restrict path, uint16_t *count, struct FAT32DirectoryTable *current_dir) {
-    uint8_t retcode = 0;
-        
-    syscall(9, (uint32_t) input, (uint32_t) &retcode, (uint32_t) "/");
-        
-    if ( retcode == 0 ) {
-
-    } else {
-        path = path;
-        count = count;
-        struct FAT32DirectoryTable new_dir;
-        uint32_t parent_cluster = (current_dir->table[0].cluster_high << 16) | current_dir->table[0].cluster_low;
-        struct FAT32DriverRequest request = {
-            .buf                   = &new_dir,
-            .name                  = {0},
-            .ext                   = "\0\0\0",
-            .parent_cluster_number = parent_cluster,
-            .buffer_size           = CLUSTER_SIZE,
-        };        
-        for (uint8_t i = 0; i < 8; i++) request.name[i] = input[i];
-        syscall(1, (uint32_t) &request, (uint32_t) &retcode, 0);
-    }
-
-}
-
 
 int main(void) {
     int32_t retcode;
@@ -282,7 +257,7 @@ int main(void) {
 
         // checking return code and calling the right syscall
         if (retcode == 0) {
-           cd_cmd(args[1], &path_cluster, &n_path, &current_dir);
+            syscall(5, (uint32_t) "exit\n", 5, 0xF);
         } 
         else if (retcode == 1) {
             ls_cmd(&current_dir);
