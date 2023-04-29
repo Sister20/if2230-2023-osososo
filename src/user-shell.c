@@ -78,7 +78,8 @@ int parse_input(char* input, char args[MAX_ARGS][MAX_ARG_LEN]) {
 void printPath(void *restrict path, uint16_t count, struct FAT32DirectoryTable *current_dir) {
     syscall(6, (uint32_t) current_dir, sizeof(struct FAT32DirectoryTable), 0);
     for (uint16_t i = 0; i < count; i++) {
-        syscall(8, (uint32_t) current_dir, (uint32_t) *((uint16_t*)path + i), 0);
+        if (i != 0) syscall(5, (uint32_t) "/", stringLength("/"), 0xA); 
+        syscall(8, (uint32_t) current_dir, (uint32_t) *((uint32_t*)path + i), 0);
         syscall(5, (uint32_t) current_dir->table[0].name, stringLength(current_dir->table[0].name), 0xA);
     }
     syscall(5, (uint32_t) ":/$ ", 4, 0xD);
@@ -113,7 +114,7 @@ void mkdir_cmd(char *input, struct FAT32DirectoryTable *current_dir) {
             .name                  = {0},
             .ext                   = "\0\0\0",
             .parent_cluster_number = parent_cluster,
-            .buffer_size           = CLUSTER_SIZE,
+            .buffer_size           = 0,
         };
         for (uint8_t i = 0; i < 8; i++) request.name[i] = input[i];
         syscall(2, (uint32_t) &request, (uint32_t) &retcode, 0);
@@ -122,14 +123,23 @@ void mkdir_cmd(char *input, struct FAT32DirectoryTable *current_dir) {
 
 void cd_cmd(char *input, void *restrict path, uint16_t *count, struct FAT32DirectoryTable *current_dir) {
     uint8_t retcode = 0;
-        
-    syscall(9, (uint32_t) input, (uint32_t) &retcode, (uint32_t) "/");
-        
-    if ( retcode == 0 ) {
-
-    } else {
-        path = path;
-        count = count;
+    // jika args dimulai dengan ".." (naik directory)
+    const char* str_path = input;  
+    if (*str_path == '.' && *(str_path+1) == '.') {
+        if (*count > 1) {
+            *count = *count - 1;
+            *((uint32_t*)path + *count) = 0;   
+        }
+    } 
+    // jika args kosong (pindah ke root)
+    else if (*str_path == 0) {
+        for (uint8_t i = 1; i < *count; i++) {
+            *((uint32_t*)path + i) = 0;
+        }
+        *count = 1;
+    }  
+    // masuk ke directory
+    else {
         struct FAT32DirectoryTable new_dir;
         uint32_t parent_cluster = (current_dir->table[0].cluster_high << 16) | current_dir->table[0].cluster_low;
         struct FAT32DriverRequest request = {
@@ -138,11 +148,30 @@ void cd_cmd(char *input, void *restrict path, uint16_t *count, struct FAT32Direc
             .ext                   = "\0\0\0",
             .parent_cluster_number = parent_cluster,
             .buffer_size           = CLUSTER_SIZE,
-        };        
-        for (uint8_t i = 0; i < 8; i++) request.name[i] = input[i];
+        };      
+        // jika path dimulai dengan "./"
+        if (*str_path == '.' && *(str_path+1) == '/') str_path = str_path + 2;
+        
+        for (uint8_t i = 0; i < 8; i++) request.name[i] = str_path[i];
         syscall(1, (uint32_t) &request, (uint32_t) &retcode, 0);
+        uint32_t new_cluster_path = new_dir.table[0].cluster_high << 16 | new_dir.table[0].cluster_low;
+        
+        // jika bukan merupakan directory
+        if (retcode == 1) {
+            syscall(5, (uint32_t) input, stringLength(input), 0xF);
+            syscall(5, (uint32_t) ": Not a directory\n", stringLength(": Not a directory\n"), 0xF);
+        } 
+        // jika directory tidak ada
+        else if (retcode == 2) {
+            syscall(5, (uint32_t) input, stringLength(input), 0xF);
+            syscall(5, (uint32_t) ": No such file or directory\n", stringLength(": No such file or directory\n"), 0xF);
+        } 
+        // sukses
+        else {
+            *((uint32_t*)path + *count) = new_cluster_path;
+            *count = *count + 1;
+        }            
     }
-
 }
 
 
@@ -164,7 +193,7 @@ int main(void) {
     // syscall(1, (uint32_t) &request, (uint32_t) &retcode, 0);
 
     // output path root directory
-    uint16_t path_cluster[20] = {2}; 
+    uint32_t path_cluster[20] = {2}; 
     uint16_t n_path = 1;
     printPath(path_cluster, n_path, &current_dir);
 
@@ -195,6 +224,7 @@ int main(void) {
         
         // Clearing buffer and printing the cwd path
         syscall(6, (uint32_t) buf, sizeof(buf), 0);
+        syscall(6, (uint32_t) args, sizeof(args), 0);
         printPath(path_cluster, n_path, &current_dir);
     }
 
