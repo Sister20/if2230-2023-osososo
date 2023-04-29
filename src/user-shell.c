@@ -575,6 +575,7 @@ void mv_cmd(struct FAT32DirectoryTable *current_dir, char *source, char *dest) {
 }
 
 void whereis_cmd(char *user_input, uint16_t cluster_number, char *res) {
+    res = res;
     struct FAT32DirectoryTable dir = {0};
     syscall(8, (uint32_t) &dir, (uint32_t) cluster_number, 0);
 
@@ -593,7 +594,7 @@ void whereis_cmd(char *user_input, uint16_t cluster_number, char *res) {
 
     while (retcode != 0) {
         if (stringCompare(user_input, filename) == 0) {
-            return
+            return;
         } 
 
         j = 0;
@@ -605,7 +606,7 @@ void whereis_cmd(char *user_input, uint16_t cluster_number, char *res) {
         }
         
         if (dir.table[i].attribute != 0){
-            whereis_cmd(user_input, ,res);
+            // whereis_cmd(user_input, ,res);
         }
         i++;
         syscall(9, (uint32_t) dir.table[i].name, (uint32_t) &retcode, (uint32_t) "\0\0\0");
@@ -675,7 +676,7 @@ int main(void) {
             else mv_cmd(&current_dir, args[1], args[2]);
         }
         else if(retcode==7) {
-            whereis_cmd(args[1], 2, &where_is_path);
+            whereis_cmd(args[1], 2, where_is_path);
             // struct FAT32DriverRequest request2 = {
             //     .buf                   = "trytyr\n asku\n ask",
             //     .name                  = "a",
