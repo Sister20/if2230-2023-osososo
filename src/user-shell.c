@@ -406,6 +406,8 @@ void mv_cmd(struct FAT32DirectoryTable *current_dir, char *source, char *dest) {
                 
                 // if dest is a file (direwrite) or dest not found
                 if (retcode==0 || retcode==3){ 
+                    syscall(5, (uint32_t) requestDest.name, stringLength(requestDest.name), 0xF);
+                    
                     syscall(2, (uint32_t) &requestDest, (uint32_t) &retcode, 0); // write new file 
                     uint16_t trash;
                     syscall(3, (uint32_t) &requestSource, (uint32_t) &trash, 0); // delete source file
@@ -429,14 +431,8 @@ void mv_cmd(struct FAT32DirectoryTable *current_dir, char *source, char *dest) {
                     syscall(1, (uint32_t) &request, (uint32_t) &retcode, 0);
                     uint32_t new_cluster_path = new_dir.table[0].cluster_high << 16 | new_dir.table[0].cluster_low;
 
-                    // struct FAT32DriverRequest writeReq = {
-                    //     .buf                   = &cl,
-                    //     .name                  = {0},
-                    //     .ext                   = "\0\0\0",
-                    //     .parent_cluster_number = new_cluster_path,
-                    //     .buffer_size           = current_dir->table[i].filesize,
-                    // };      
                     requestDest.parent_cluster_number = new_cluster_path;
+
 
                     syscall(2, (uint32_t) &requestDest, (uint32_t) &retcode, 0); // write new file 
                     uint16_t trash;
